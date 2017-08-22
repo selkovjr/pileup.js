@@ -130,7 +130,6 @@ function flowgram_panel () {
             var
             bi = 0,
             fi = 0;
-            console.log(data);
             data.flowgram_index = {};
             for (fi = 0; fi < data.base_call.length; fi++) {
               for (var h = 0; h < data.base_call[fi]; h++) {
@@ -773,7 +772,6 @@ function flowgram_panel () {
         getReferenceLength: sam_read.getReferenceLength,
       };
 
-    console.log(sam_read._qual);
     for (i = 11; i < f.length; i++) {
       var
         subtag = f[i].split(':'),

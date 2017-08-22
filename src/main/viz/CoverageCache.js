@@ -144,10 +144,19 @@ class CoverageCache {
             insertions = bin.insertions;
           }
           else {
-            insertions = bin.insertions = {};
+            insertions = bin.insertions = {all: {}, f: {}, r: {}};
           }
-          let c = insertions[allele] || 0;
-          insertions[allele] = 1 + c;
+          let c = insertions.all[allele] || 0;
+          insertions.all[allele] = 1 + c;
+
+          if (reverse) {
+            let c = insertions.r[allele] || 0;
+            insertions.r[allele] = 1 + c;
+          }
+          else {
+            let c = insertions.f[allele] || 0;
+            insertions.f[allele] = 1 + c;
+          }
         }
       }
       if (op.op === 'D') {
@@ -165,10 +174,19 @@ class CoverageCache {
             deletions = bin.deletions;
           }
           else {
-            deletions = bin.deletions = {};
+            deletions = bin.deletions = {all: {}, f: {}, r: {}};
           }
-          let c = deletions[allele] || 0;
-          deletions[allele] = 1 + c;
+          let c = deletions.all[allele] || 0;
+          deletions.all[allele] = 1 + c;
+
+          if (reverse) {
+            let c = deletions.r[allele] || 0;
+            deletions.r[allele] = 1 + c;
+          }
+          else {
+            let c = deletions.f[allele] || 0;
+            deletions.f[allele] = 1 + c;
+          }
         }
       }
     }

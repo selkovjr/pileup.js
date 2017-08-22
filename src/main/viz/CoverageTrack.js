@@ -227,7 +227,7 @@ class CoverageTrack extends React.Component {
         <canvas ref="canvas" onMouseMove={this.handleMouseMove.bind(this)} onMouseLeave={this.handleMouseLeave.bind(this)} />
         <Portal ref="portal">
           <CoveragePopup ref="popup" popupLeft={this.state.popupLeft} popupTop={this.state.popupTop}>
-            <Table className="coverage-popup-table" data={this.state.counts} columns={['ref', 'arrow', 'alt', 'count', 'fraction']} />
+            <Table className="coverage-popup-table" data={this.state.counts} columns={['ref', 'arrow', 'alt', 'count', 'f', 'r', 'fraction', 'ff', 'fr']} />
           </CoveragePopup>
         </Portal>
       </div>
@@ -347,6 +347,17 @@ class CoverageTrack extends React.Component {
 
     if (bin) {
       var mmCount = bin.mismatches ? _.reduce(bin.mismatches.all, (a, b) => a + b) : 0;
+      var mmCount_f = bin.mismatches && bin.mismatches.f ? _.reduce(bin.mismatches.f, (a, b) => a + b) : 0;
+      var mmCount_r = bin.mismatches && bin.mismatches.r ? _.reduce(bin.mismatches.r, (a, b) => a + b) : 0;
+      if (mmCount === NaN || mmCount === undefined) {
+        mCount = 0;
+      }
+      if (mmCount_f === NaN || mmCount_f === undefined) {
+        mmCount_f = 0;
+      }
+      if (mmCount_r === NaN || mmCount_r === undefined) {
+        mmCount_r = 0;
+      }
       var ref = bin.ref || this.props.referenceSource.getRangeAsString({
         contig: range.contig,
         start: pos,
@@ -357,31 +368,47 @@ class CoverageTrack extends React.Component {
       if (bin.mismatches || bin.deletions || bin.insertions) {
         // Show reference count first
         counts = [{
-          alt: ref, // Abuse of ALT; the idea is that it is a null substitution: ref -> ref
+          alt: ref, // Abuse of ALT; the idea is that it is a null substitution: ref -> ref; only used to render REF counts
           count: bin.count - mmCount,
-          fraction: Number.parseFloat((bin.count - mmCount) / bin.count).toFixed(3)
+          f: bin.count_f ? bin.count_f - mmCount_f : 0,
+          r: bin.count_r ? bin.count_r - mmCount_r : 0,
+          fraction: Number.parseFloat((bin.count - mmCount) / bin.count).toFixed(3),
+          ff: Number.parseFloat((bin.count_f - mmCount_f) / bin.count_f).toFixed(3),
+          fr: Number.parseFloat((bin.count_r - mmCount_r) / bin.count_r).toFixed(3)
         }];
-        if (bin.mismatches.all) {
+        if (bin.mismatches) {
           Object.keys(bin.mismatches.all).sort().forEach(base => counts.push({
             alt: base,
             count: bin.mismatches.all[base],
-            fraction: Number.parseFloat(bin.mismatches.all[base] / bin.count).toFixed(3)
+            f: bin.mismatches.f[base] || '',
+            r: bin.mismatches.r[base] || '',
+            fraction: Number.parseFloat(bin.mismatches.all[base] / bin.count).toFixed(3),
+            ff: bin.mismatches.f[base] ? Number.parseFloat(bin.mismatches.f[base] / bin.count_f).toFixed(3) : '',
+            fr: bin.mismatches.r[base] ? Number.parseFloat(bin.mismatches.r[base] / bin.count_r).toFixed(3) : ''
           }));
         }
         ['insertions', 'deletions'].forEach(indel => {
           if (bin[indel]) {
-            Object.keys(bin[indel]).sort().forEach(allele => counts.push({
+            Object.keys(bin[indel].all).sort().forEach(allele => counts.push({
               ref: allele.split('>')[0],
               arrow: '→',
               alt: allele.split('>')[1],
-              count: bin[indel][allele],
-              fraction: Number.parseFloat(bin[indel][allele] / bin.count).toFixed(3)
+              count: bin[indel].all[allele],
+              f: bin[indel].f[allele] || '',
+              r: bin[indel].r[allele] || '',
+              fraction: Number.parseFloat(bin[indel].all[allele] / bin.count).toFixed(3),
+              ff: bin[indel].f[allele] ? Number.parseFloat(bin[indel].f[allele] / bin.count).toFixed(3) : '',
+              fr: bin[indel].r[allele] ? Number.parseFloat(bin[indel].r[allele] / bin.count).toFixed(3) : ''
             }));
           }
         });
         counts.push({
           alt: 'all',
-          count: bin.count
+          count: bin.count,
+          f: bin.count_f,
+          r: bin.count_r,
+          ff: (bin.count_f / bin.count).toFixed(3),
+          fr: (bin.count_r / bin.count).toFixed(3)
         });
       }
       else {

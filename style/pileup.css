@@ -368,8 +368,22 @@
   padding-right: 2px;
 }
 
+.coverage-popup-table td:nth-child(5),
+.coverage-popup-table td:nth-child(8) {
+  color: #cc0000;
+  text-align: right;
+  padding-left: 4px;
+}
+
+.coverage-popup-table td:nth-child(6),
+.coverage-popup-table td:nth-child(9) {
+  color: #3333cc;
+  text-align: right;
+  padding-left: 4px;
+}
+
 .coverage-popup-table td:nth-child(4),
-.coverage-popup-table td:nth-child(5) {
+.coverage-popup-table td:nth-child(7) {
   /* count */
   text-align: right;
   padding-left: 4px;
