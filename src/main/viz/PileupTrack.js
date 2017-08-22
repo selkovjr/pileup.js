@@ -31,7 +31,7 @@ import dataCanvas from 'data-canvas';
 import style from '../style';
 
 
-var READ_HEIGHT = 11;
+var READ_HEIGHT = 15;
 var READ_SPACING = 1;  // vertical pixels between reads
 
 var READ_STRAND_ARROW_WIDTH = 5;
@@ -150,7 +150,12 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
         var x0 = scale(op.pos + 1) - 2,  // to cover a bit of the previous segment
             y1 = y - 1,
             y2 = y + READ_HEIGHT + 2;
-        ctx.fillRect(x0, y1, 1, y2 - y1);
+        if (vRead.strand == '+') {
+          ctx.fillRect(x0, y1, 1, (y2 - y1) / 2);
+        }
+        else {
+          ctx.fillRect(x0, y1 + (y2 - y1) / 2, 1, (y2 - y1) / 2);
+        }
         ctx.restore();
         break;
     }
@@ -176,7 +181,7 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
         drawSegment(op, y, vRead);
       }
     });
-    vRead.mismatches.forEach(bp => renderMismatch(bp, y));
+    vRead.mismatches.forEach(bp => renderMismatch(bp, y, vRead));
     ctx.restore();
     ctx.popObject();
   }
@@ -212,7 +217,7 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
     ctx.restore();
   }
 
-  function renderMismatch(bp: BasePair, y: number) {
+  function renderMismatch(bp: BasePair, y: number, vRead: VisualAlignment) {
     // This can happen if the mismatch is in a different tile, for example.
     if (!range.interval.contains(bp.pos)) return;
 
@@ -224,8 +229,14 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
     if (showText) {
       // 0.5 = centered
       ctx.fillText(bp.basePair, scale(1 + 0.5 + bp.pos), y + READ_HEIGHT - 2);
-    } else {
-      ctx.fillRect(scale(1 + bp.pos), y,  pxPerLetter - 1, READ_HEIGHT);
+    }
+    else {
+      if (vRead.strand == '+') {
+        ctx.fillRect(scale(1 + bp.pos), y + READ_HEIGHT / 2,  pxPerLetter - 1, READ_HEIGHT / 2);
+      }
+      else {
+        ctx.fillRect(scale(1 + bp.pos), y,  pxPerLetter - 1, READ_HEIGHT / 2);
+      }
     }
     ctx.restore();
     ctx.popObject();

@@ -19,7 +19,7 @@ import utils from '../utils';
 export type BinSummary = {
   count: number;
   // These properties will only be present when there are mismatches.
-  mismatches?: {[key: string]: number};
+  mismatches?: {[key: string]: object};
   ref?: string;  // what does the reference have here?
 };
 
@@ -85,12 +85,19 @@ class CoverageCache {
     var allele;
     var bin; // pointer to a bin in this.refToCounts (via var counts)
 
+    var reverse = read.flag & 16;
     for (var pos = start; pos <= stop; pos++) {
       let c = counts[pos];
       if (!c) {
-        counts[pos] = c = {count: 0};
+        counts[pos] = c = {count: 0, count_f: 0, count_r: 0};
       }
       c.count += 1;
+      if (reverse) {
+        c.count_r += 1;
+      }
+      else {
+        c.count_f += 1;
+      }
       if (c.count > max) max = c.count;
     }
 
@@ -101,15 +108,24 @@ class CoverageCache {
         mismatches = bin.mismatches;
       }
       else {
-        mismatches = bin.mismatches = {};
+        mismatches = bin.mismatches = {all: {}, f: {}, r: {}};
         bin.ref = this.referenceSource.getRangeAsString({
           contig: ref,
           start: mm.pos,
           stop: mm.pos
         });
       }
-      let c = mismatches[mm.basePair] || 0;
-      mismatches[mm.basePair] = 1 + c;
+      let c = mismatches.all[mm.basePair] || 0;
+      mismatches.all[mm.basePair] = 1 + c;
+
+      if (reverse) {
+        let c = mismatches.r[mm.basePair] || 0;
+        mismatches.r[mm.basePair] = 1 + c;
+      }
+      else {
+        let c = mismatches.f[mm.basePair] || 0;
+        mismatches.f[mm.basePair] = 1 + c;
+      }
     }
 
     for (var op of opInfo.ops) {

@@ -139,20 +139,23 @@ function renderBars(ctx: DataCanvasRenderingContext2D,
     pos = Number(pos);  // object keys are strings, not numbers.
 
     // If this is a high-frequency variant, add in the reference.
-    var mismatchCount = _.reduce(mismatches, (x, y) => x + y);
-    var mostFrequentMismatch = _.max(mismatches);
+    var mismatchCount = _.reduce(mismatches.all, (x, y) => x + y);
+    var mismatchCount_f = _.reduce(mismatches.f, (x, y) => x + y);
+    var mismatchCount_r = _.reduce(mismatches.r, (x, y) => x + y);
+    var mostFrequentMismatch = _.max(mismatches.all);
     if (mostFrequentMismatch > MISMATCH_THRESHOLD &&
         mismatchCount > options.vafColorThreshold * bin.count &&
         mismatchCount < bin.count) {
       if (bin.ref) {  // here for flow; can't realy happen
-        mismatches[bin.ref] = bin.count - mismatchCount;
+        // Abuse the idea of mismatches by adding reference count (it will be removed upon rendering; see below)
+        mismatches.all[bin.ref] = bin.count - mismatchCount;
       }
     }
 
     let {barX1, barX2} = binPos(pos, bin.count);
     ctx.pushObject(bin);
     var countSoFar = 0;
-    _.chain(mismatches)
+    _.chain(mismatches.all)
       .map((count, base) => ({count, base}))  // pull base into the object
       .filter(({count}) => count > MISMATCH_THRESHOLD)
       .sortBy(({count}) => -count)  // the most common mismatch at the bottom
@@ -171,6 +174,11 @@ function renderBars(ctx: DataCanvasRenderingContext2D,
         ctx.popObject();
       });
     ctx.popObject();
+
+    // Clean up to leave only mismatches for display on hover
+    Object.keys(mismatches).forEach(function (k) {
+      delete mismatches.all[bin.ref];
+    });
   });
 }
 
@@ -338,7 +346,7 @@ class CoverageTrack extends React.Component {
         bin = bins[pos];
 
     if (bin) {
-      var mmCount = bin.mismatches ? _.reduce(bin.mismatches, (a, b) => a + b) : 0;
+      var mmCount = bin.mismatches ? _.reduce(bin.mismatches.all, (a, b) => a + b) : 0;
       var ref = bin.ref || this.props.referenceSource.getRangeAsString({
         contig: range.contig,
         start: pos,
@@ -347,16 +355,17 @@ class CoverageTrack extends React.Component {
 
       var counts;
       if (bin.mismatches || bin.deletions || bin.insertions) {
+        // Show reference count first
         counts = [{
-          alt: ref, // The idea is that it is a null substitution: ref -> ref
+          alt: ref, // Abuse of ALT; the idea is that it is a null substitution: ref -> ref
           count: bin.count - mmCount,
           fraction: Number.parseFloat((bin.count - mmCount) / bin.count).toFixed(3)
         }];
-        if (bin.mismatches) {
-          Object.keys(bin.mismatches).sort().forEach(base => counts.push({
+        if (bin.mismatches.all) {
+          Object.keys(bin.mismatches.all).sort().forEach(base => counts.push({
             alt: base,
-            count: bin.mismatches[base],
-            fraction: Number.parseFloat(bin.mismatches[base] / bin.count).toFixed(3)
+            count: bin.mismatches.all[base],
+            fraction: Number.parseFloat(bin.mismatches.all[base] / bin.count).toFixed(3)
           }));
         }
         ['insertions', 'deletions'].forEach(indel => {
@@ -394,7 +403,7 @@ class CoverageTrack extends React.Component {
     else {
       this.refs.portal.closePortal();
     }
-  }
+  } // handleMouseMove()
 
   handleMouseLeave(reactEvent: any) {
     this.refs.portal.closePortal();
