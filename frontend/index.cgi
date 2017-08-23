@@ -124,6 +124,7 @@ if (%arg<select>) {
 }
 
 my ($contig, $range) = $coords.split(':');
+$range ~~ s:g/','//;
 my ($start, $stop);
 if ($range ~~ /'-'/) {
   ($start, $stop) = $range.split('-');
@@ -147,6 +148,7 @@ my %template_data =
   ;
 
 if ($mark) {
+  $mark ~~ s:g/','//;
   %template_data<mark> = $mark;
 }
 else {
