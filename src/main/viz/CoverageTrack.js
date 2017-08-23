@@ -140,8 +140,6 @@ function renderBars(ctx: DataCanvasRenderingContext2D,
 
     // If this is a high-frequency variant, add in the reference.
     var mismatchCount = _.reduce(mismatches.all, (x, y) => x + y);
-    var mismatchCount_f = _.reduce(mismatches.f, (x, y) => x + y);
-    var mismatchCount_r = _.reduce(mismatches.r, (x, y) => x + y);
     var mostFrequentMismatch = _.max(mismatches.all);
     if (mostFrequentMismatch > MISMATCH_THRESHOLD &&
         mismatchCount > options.vafColorThreshold * bin.count &&
@@ -349,13 +347,13 @@ class CoverageTrack extends React.Component {
       var mmCount = bin.mismatches ? _.reduce(bin.mismatches.all, (a, b) => a + b) : 0;
       var mmCount_f = bin.mismatches && bin.mismatches.f ? _.reduce(bin.mismatches.f, (a, b) => a + b) : 0;
       var mmCount_r = bin.mismatches && bin.mismatches.r ? _.reduce(bin.mismatches.r, (a, b) => a + b) : 0;
-      if (mmCount === NaN || mmCount === undefined) {
-        mCount = 0;
+      if (isNaN(mmCount) || mmCount === undefined) {
+        mmCount = 0;
       }
-      if (mmCount_f === NaN || mmCount_f === undefined) {
+      if (isNaN(mmCount_f) || mmCount_f === undefined) {
         mmCount_f = 0;
       }
-      if (mmCount_r === NaN || mmCount_r === undefined) {
+      if (isNaN(mmCount_r) || mmCount_r === undefined) {
         mmCount_r = 0;
       }
       var ref = bin.ref || this.props.referenceSource.getRangeAsString({
