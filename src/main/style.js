@@ -11,9 +11,9 @@ module.exports = {
   // Colors for individual base pairs
   BASE_COLORS: {
     'A': '#188712',
-    'G': '#C45C16',
+    'G': '#a14b12',
     'C': '#0600F9',
-    'T': '#F70016',
+    'T': '#ff0015',
     'U': '#F70016',
     'N': 'black'
   },
