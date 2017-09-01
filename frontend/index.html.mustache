@@ -49,7 +49,12 @@
 
   // We are going to use the same data source for multiple tracks
   var readSource = pileup.formats.reads({
+{{#local}}
     url: '/reads.cgi?{{downsample}}{{filter}}coords=<range>;bam={{bam}}'
+{{/local}}
+{{#s3}}
+    url: '/reads.cgi?{{downsample}}{{filter}}coords=<range>;bucket={{bucket}};panel={{panel}};order={{order}};run={{run}};type={{type}};rel={{rel}};product={{product}};sample={{sample}}'
+{{/s3}}
   });
 
   var sources = [

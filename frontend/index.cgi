@@ -53,20 +53,28 @@ sub usage {
   exit;
 }
 
-if (%*ENV<QUERY_STRING>) {
+if %*ENV<QUERY_STRING> {
   my $q = uri_decode(%*ENV<QUERY_STRING>);
-  for $q.split(/<[&;]>/) {
-    my ($k, $v) = .split('=');
-    if ($v) {
-      %arg{$k} = $v;
+  for $q.split(/<[&;]>/) -> $p {
+    if $p.match: /'='/ {
+      my ($k, $v) = $p.split('=');
+      if $v {
+        %arg{$k} = $v;
+        say $*ERR: "$k -> %arg{$k}";
+      }
+      else {
+        %arg{$k} = True;
+        say $*ERR: "$k -> %arg{$k}";
+      }
     }
     else {
-      %arg{$k} = True;
+      %arg{$p} = False;
+      say $*ERR: "$p -> %arg{$p}";
     }
   }
   say $*ERR: Dump(%arg);
 
-  if (not %arg<coords> or not %arg<bam>) {
+  if not %arg<coords> or not (%arg<bam> or %arg<order>) { # elaborate!
     usage();
   }
 }
@@ -103,11 +111,6 @@ if (%arg<downsample>) {
   $downsample = "downssample=%arg<downsample>;";
 }
 
-my $app = 'xo';
-if (%arg<exome>) {
-  $app = 'exome';
-}
-
 my $ref = 'hg19';
 if (%arg<ref>) {
   $ref = %arg<ref>
@@ -133,9 +136,39 @@ else {
   ($start, $stop) = ($range - 20, $range + 20);
 }
 
+my $bucket = 'clinical-data-processing-complete';
+if %arg<bucket> {
+  $bucket = %arg<bucket>;
+}
+
+my $panel = 'xO';
+if %arg<panel> {
+  $panel = %arg<panel>;
+}
+
+my $type = 'TN';
+if %arg<type> {
+  $type = %arg<type>;
+}
+
+my $rel = 'M';
+if %arg<rel> {
+  $rel = %arg<rel>;
+}
+
+my $product = 'R';
+if %arg<product> {
+  $product = %arg<product>;
+}
+
+my $sample = 'T';
+if %arg<sample> {
+  $sample = %arg<sample>;
+}
+
 my %template_data =
   url => get_url(),
-  app => $app,
+  panel => $panel,
   ref => $ref,
   downsample => $downsample,
   filter => $filter,
@@ -143,9 +176,23 @@ my %template_data =
   coords => $coords,
   contig => $contig,
   start => $start,
-  stop => $stop,
-  bam => %arg<bam>
+  stop => $stop
   ;
+
+if %arg<bam> {
+  %template_data<local> = True;
+  %template_data<bam> = %arg<bam>;
+}
+else {
+  %template_data<s3> = True;
+  %template_data<bucket> = $bucket;
+  %template_data<order> = %arg<order>;
+  %template_data<run> = %arg<run>;
+  %template_data<type> = $type;
+  %template_data<rel> = $rel;
+  %template_data<product> = $product;
+  %template_data<sample> = $sample;
+}
 
 if ($mark) {
   $mark ~~ s:g/','//;
