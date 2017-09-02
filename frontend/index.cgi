@@ -63,12 +63,12 @@ if %*ENV<QUERY_STRING> {
         say $*ERR: "$k -> %arg{$k}";
       }
       else {
-        %arg{$k} = True;
+        %arg{$k} = Any;
         say $*ERR: "$k -> %arg{$k}";
       }
     }
     else {
-      %arg{$p} = False;
+      %arg{$p} = True;
       say $*ERR: "$p -> %arg{$p}";
     }
   }

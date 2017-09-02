@@ -22,12 +22,12 @@ for $q.split(/<[&;]>/) -> $p {
       say $*ERR: "$k -> %arg{$k}";
     }
     else {
-      %arg{$k} = True;
+      %arg{$k} = Any;
       say $*ERR: "$k -> %arg{$k}";
     }
   }
   else {
-    %arg{$p} = False;
+    %arg{$p} = True;
     say $*ERR: "$p -> %arg{$p}";
   }
 }
@@ -109,7 +109,6 @@ if ($err) {
   print $message;
 
   print $*ERR: color('yellow');
-  say $*ERR: 'Error getting bam header with samtools';
   print $*ERR: $message;
   print $*ERR: color('reset');
   print $*ERR: "\n";
