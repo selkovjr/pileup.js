@@ -79,12 +79,12 @@ class Controls extends React.Component {
 
   zoomIn(e: any) {
     e.preventDefault();
-    this.zoomByFactor(0.5);
+    this.zoomByFactor(0.75);
   }
 
   zoomOut(e: any) {
     e.preventDefault();
-    this.zoomByFactor(2.0);
+    this.zoomByFactor(1.333333333);
   }
 
   zoomByFactor(factor: number) {

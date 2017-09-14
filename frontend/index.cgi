@@ -156,7 +156,7 @@ if ($range ~~ /'-'/) {
   ($start, $stop) = $range.split('-');
 }
 else {
-  ($start, $stop) = ($range - 20, $range + 20);
+  ($start, $stop) = ($range - 40, $range + 40);
 }
 
 sub get_url {
