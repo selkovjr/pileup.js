@@ -423,7 +423,7 @@
 
 /* Split panel styles */
 #pileup {
-  width:680px;
+  /* width:680px */;
   overflow: auto;
 }
 
