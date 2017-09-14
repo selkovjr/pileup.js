@@ -52,9 +52,12 @@
 {{#local}}
     url: '/reads.cgi?{{downsample}}{{filter}}coords=<range>;bam={{bam}}'
 {{/local}}
-{{#s3}}
+{{#aws_path}}
+    url: '/reads.cgi?{{downsample}}{{filter}}coords=<range>;aws={{aws}}'
+{{/aws_path}}
+{{#aws_detail}}
     url: '/reads.cgi?{{downsample}}{{filter}}coords=<range>;bucket={{bucket}};panel={{panel}};order={{order}};run={{run}};type={{type}};rel={{rel}};product={{product}};sample={{sample}}'
-{{/s3}}
+{{/aws_detail}}
   });
 
   var sources = [

@@ -6,6 +6,7 @@ v6;
 use URI::Encode;
 use File::Temp;
 use Terminal::ANSIColor;
+use Data::Dump;
 
 print "Content-type: text/plain\n";
 print "Access-Control-Allow-Origin: *\n";
@@ -22,7 +23,7 @@ for $q.split(/<[&;]>/) -> $p {
       say $*ERR: "$k -> %arg{$k}";
     }
     else {
-      %arg{$k} = Any;
+      %arg{$k} = '';
       say $*ERR: "$k -> %arg{$k}";
     }
   }
@@ -35,18 +36,7 @@ for $q.split(/<[&;]>/) -> $p {
 %arg<coords> ~~ s/chr//;
 #}}}
 
-my ($stderr, $stderr-fh) = tempfile(:prefix('samtools-view-stderr-'), :unlink);
-
-my $downsample = '';
-if (%arg<downssample>) {
-  $downsample = " -s %arg<downssample>";
-}
-
-my $subcommand_alt = '';
-if (%arg<alt>) {
-  $subcommand_alt = '| ./select-mismatches';
-}
-
+# order/run attributes {{{1
 my $bucket = 'clinical-data-processing-complete';
 if %arg<bucket> {
   $bucket = %arg<bucket>;
@@ -77,26 +67,54 @@ my $sample = 'T';
 if %arg<sample> {
   $sample = %arg<sample>;
 }
+#}}}
 
-my $bam;
+
+my $data;
 if %arg<bam> {
-  $bam = %arg<bam>;
+  $data = %arg<bam>
 }
-else {
+elsif %arg<aws> {
+  $data = "s3://$bucket/{%arg<aws>}";
+}
+elsif %arg<order> {
   if %arg<run> {
-    $bam = "s3://$bucket/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}/{%arg<run>}/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.sorted.bam"
+    $data = "s3://$bucket/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}/{%arg<run>}/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.dedup.bam"
   }
   else {
-    $bam = "s3://$bucket/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.dedup.bam"
+    $data = "s3://$bucket/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.dedup.bam"
   }
+}
+else {
+  say "Status: 201 Backend Error\n";
+  say 'incorrect URL arguments';
+  print Dump(%arg);
+
+  print $*ERR: color('yellow');
+  print Dump(%arg);
+  print $*ERR: color('reset');
+  print $*ERR: "\n";
+  exit;
+}
+
+my ($stderr, $stderr-fh) = tempfile(:prefix('samtools-view-stderr-'), :unlink);
+
+my $downsample = '';
+if (%arg<downssample>) {
+  $downsample = " -s %arg<downssample>";
+}
+
+my $subcommand_alt = '';
+if (%arg<alt>) {
+  $subcommand_alt = '| ./select-mismatches';
 }
 
 my $command;
 if (%arg<filter>) {
-  $command = qq{/home/selkov/bin/samtools view $downsample '$bam' %arg<coords> $subcommand_alt 2> $stderr | egrep -i '%arg<filter>'};
+  $command = qq{/home/selkov/bin/samtools view $downsample '$data' %arg<coords> $subcommand_alt 2> $stderr | egrep -i '%arg<filter>'};
 }
 else {
-  $command = qq{/home/selkov/bin/samtools view $downsample $bam %arg<coords> $subcommand_alt 2> $stderr};
+  $command = qq{/home/selkov/bin/samtools view $downsample $data %arg<coords> $subcommand_alt 2> $stderr};
 }
 
 my $basename = IO::Path.new($*PROGRAM-NAME).basename;

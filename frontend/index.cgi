@@ -74,7 +74,7 @@ if %*ENV<QUERY_STRING> {
   }
   say $*ERR: Dump(%arg);
 
-  if not %arg<coords> or not (%arg<bam> or %arg<order>) { # elaborate!
+  if not (%arg<coords> or %arg<bam> or %arg<aws> or %arg<order>) { # elaborate!
     usage();
   }
 }
@@ -84,15 +84,38 @@ else {
 
 #}}}
 
-sub get_url {
-  my $url = 'http';
-  if (%*ENV<HTTPS> and %*ENV<HTTPS> eq 'on') {
-    $url ~= "s";
-  }
-  $url ~= '://';
-  $url ~= %*ENV<HTTP_HOST> ~ %*ENV<REQUEST_URI>;
-  return $url;
+# order/run attributes {{{1
+my $bucket = 'clinical-data-processing-complete';
+if %arg<bucket> {
+  $bucket = %arg<bucket>;
 }
+say $*ERR: "bucket: $bucket";
+
+my $panel = 'xO';
+if %arg<panel> {
+  $panel = %arg<panel>;
+}
+
+my $type = 'TN';
+if %arg<type> {
+  $type = %arg<type>;
+}
+
+my $rel = 'M';
+if %arg<rel> {
+  $rel = %arg<rel>;
+}
+
+my $product = 'R';
+if %arg<product> {
+  $product = %arg<product>;
+}
+
+my $sample = 'T';
+if %arg<sample> {
+  $sample = %arg<sample>;
+}
+#}}}
 
 my $coords = %arg<coords>;
 if (not $coords) {
@@ -136,34 +159,14 @@ else {
   ($start, $stop) = ($range - 20, $range + 20);
 }
 
-my $bucket = 'clinical-data-processing-complete';
-if %arg<bucket> {
-  $bucket = %arg<bucket>;
-}
-
-my $panel = 'xO';
-if %arg<panel> {
-  $panel = %arg<panel>;
-}
-
-my $type = 'TN';
-if %arg<type> {
-  $type = %arg<type>;
-}
-
-my $rel = 'M';
-if %arg<rel> {
-  $rel = %arg<rel>;
-}
-
-my $product = 'R';
-if %arg<product> {
-  $product = %arg<product>;
-}
-
-my $sample = 'T';
-if %arg<sample> {
-  $sample = %arg<sample>;
+sub get_url {
+  my $url = 'http';
+  if (%*ENV<HTTPS> and %*ENV<HTTPS> eq 'on') {
+    $url ~= "s";
+  }
+  $url ~= '://';
+  $url ~= %*ENV<HTTP_HOST> ~ %*ENV<REQUEST_URI>;
+  return $url;
 }
 
 my %template_data =
@@ -179,21 +182,6 @@ my %template_data =
   stop => $stop
   ;
 
-if %arg<bam> {
-  %template_data<local> = True;
-  %template_data<bam> = %arg<bam>;
-}
-else {
-  %template_data<s3> = True;
-  %template_data<bucket> = $bucket;
-  %template_data<order> = %arg<order>;
-  %template_data<run> = %arg<run>;
-  %template_data<type> = $type;
-  %template_data<rel> = $rel;
-  %template_data<product> = $product;
-  %template_data<sample> = $sample;
-}
-
 if ($mark) {
   $mark ~~ s:g/','//;
   %template_data<mark> = $mark;
@@ -207,6 +195,37 @@ if ($blacklist) {
   %template_data<blacklist> = {
     url => $blacklist;
   };
+}
+
+if %arg<bam> {
+  %template_data<local> = True;
+  %template_data<bam> = %arg<bam>;
+}
+elsif %arg<aws> {
+  %template_data<aws_path> = True;
+  %template_data<bucket> = $bucket;
+  %template_data<aws> = %arg<aws>;
+}
+elsif %arg<order> {
+  %template_data<aws_detail> = True;
+  %template_data<bucket> = $bucket;
+  %template_data<order> = %arg<order>;
+  %template_data<run> = %arg<run>;
+  %template_data<type> = $type;
+  %template_data<rel> = $rel;
+  %template_data<product> = $product;
+  %template_data<sample> = $sample;
+}
+else {
+  say "Status: 201 Backend Error\n";
+  say 'incorrect URL arguments';
+  print Dump(%arg);
+
+  print $*ERR: color('yellow');
+  print Dump(%arg);
+  print $*ERR: color('reset');
+  print $*ERR: "\n";
+  exit;
 }
 
 log_message('rendering');

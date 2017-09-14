@@ -6,6 +6,7 @@ v6;
 use URI::Encode;
 use File::Temp;
 use Terminal::ANSIColor;
+use Data::Dump;
 
 print "Content-type: text/plain\n";
 print "Access-Control-Allow-Origin: *\n";
@@ -22,7 +23,7 @@ for $q.split(/<[&;]>/) -> $p {
       say $*ERR: "$k -> %arg{$k}";
     }
     else {
-      %arg{$k} = Any;
+      %arg{$k} = '';
       say $*ERR: "$k -> %arg{$k}";
     }
   }
@@ -33,8 +34,7 @@ for $q.split(/<[&;]>/) -> $p {
 }
 #}}}
 
-my ($stderr, $stderr-fh) = tempfile(:prefix('samtools-header-stderr'), :unlink);
-
+# order/run attributes {{{1
 my $bucket = 'clinical-data-processing-complete';
 if %arg<bucket> {
   $bucket = %arg<bucket>;
@@ -65,21 +65,37 @@ my $sample = 'T';
 if %arg<sample> {
   $sample = %arg<sample>;
 }
+#}}}
 
-my $bam;
+
+my $data;
 if %arg<bam> {
-  $bam = %arg<bam>;
+  $data = %arg<bam>
 }
-else {
+elsif %arg<aws> {
+  $data = "s3://$bucket/{%arg<aws>}";
+}
+elsif %arg<order> {
   if %arg<run> {
-    $bam = "s3://$bucket/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}/{%arg<run>}/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.sorted.bam"
+    $data = "s3://$bucket/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}/{%arg<run>}/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.dedup.bam"
   }
   else {
-    $bam = "s3://$bucket/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.dedup.bam"
+    $data = "s3://$bucket/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.dedup.bam"
   }
 }
+else {
+  say "Status: 201 Backend Error\n";
+  say 'incorrect URL arguments';
+  print Dump(%arg);
 
-my $command = qq{/home/selkov/bin/samtools view -H '$bam'};
+  print $*ERR: color('yellow');
+  print Dump(%arg);
+  print $*ERR: color('reset');
+  print $*ERR: "\n";
+  exit;
+}
+
+my $command = qq{/home/selkov/bin/samtools view -H '$data'};
 
 my $basename = IO::Path.new($*PROGRAM-NAME).basename;
 my $path = $*PROGRAM-NAME.substr(0, $*PROGRAM-NAME.index($basename));
@@ -93,6 +109,8 @@ print $*ERR: color('green');
 print $*ERR: $command;
 print $*ERR: color('reset');
 print $*ERR: "\n";
+
+my ($stderr, $stderr-fh) = tempfile(:prefix('samtools-header-stderr'), :unlink);
 
 my $result = chomp qq:x{$command 2> $stderr};
 
