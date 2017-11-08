@@ -149,7 +149,7 @@
 
 /* regions track */
 .pileup-root > .regions {
-  flex: 0 0 50px;
+  flex: 0 0 30px;
 }
 
 .region {
@@ -179,7 +179,7 @@
 
 /* gene track */
 .pileup-root > .genes {
-  flex: 0 0 50px;
+  flex: 0 0 30px;
 }
 
 .gene {
@@ -306,7 +306,7 @@
 
 /* coverage track */
 .pileup-root > .coverage {
-  flex: 0 0 50px;  /* fixed height */
+  flex: 0 0 30px;  /* fixed height */
 }
 .coverage rect.bin {
   stroke-width: 0.1;
