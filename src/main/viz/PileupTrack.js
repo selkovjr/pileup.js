@@ -309,6 +309,7 @@ class PileupTrack extends React.Component {
       if (networkStatus.error) {
         message = this.formatStatus(networkStatus);
         message_class = 'network-status-error-message';
+        this.props.parent.removeDragInterface();
       }
       else {
         message = 'Loading alignments… (' + this.formatStatus(networkStatus) + ')';

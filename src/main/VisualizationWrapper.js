@@ -75,6 +75,17 @@ class VisualizationWrapper extends React.Component {
     return d3utils.getTrackScale(this.props.range, this.state.width);
   }
 
+  removeDragInterface(): any {
+    var div = ReactDOM.findDOMNode(this);
+
+    var drag = d3.behavior.drag()
+        .on('dragstart', null)
+        .on('drag', null)
+        .on('dragend', null);
+
+    d3.select(div).call(drag)
+  }
+
   addDragInterface(): any {
     this.hasDragBeenInitialized = true;
     var div = ReactDOM.findDOMNode(this);
@@ -135,7 +146,8 @@ class VisualizationWrapper extends React.Component {
       referenceSource: this.props.referenceSource,
       width: this.state.width,
       height: this.state.height,
-      options: this.props.visualization.options
+      options: this.props.visualization.options,
+      parent: this
     } : VizProps));
 
     return <div className='drag-wrapper'>{el}</div>;
