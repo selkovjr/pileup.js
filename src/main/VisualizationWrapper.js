@@ -83,7 +83,7 @@ class VisualizationWrapper extends React.Component {
         .on('drag', null)
         .on('dragend', null);
 
-    d3.select(div).call(drag)
+    d3.select(div).call(drag);
   }
 
   addDragInterface(): any {
