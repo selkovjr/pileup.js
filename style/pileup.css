@@ -306,7 +306,7 @@
 
 /* coverage track */
 .pileup-root > .coverage {
-  flex: 0 0 30px;  /* fixed height */
+  flex: 0 0 50px;  /* fixed height */
 }
 .coverage rect.bin {
   stroke-width: 0.1;

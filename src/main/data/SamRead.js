@@ -54,6 +54,7 @@ class SamRead /* implements Alignment */ {
   _full: ?Object;
   _seq: ?string;
   _interval: ?ContigInterval<string>;
+  _segments: ?Array;
 
   /**
    * @param buffer contains the raw bytes of the serialized BAM read. It must
@@ -176,6 +177,24 @@ class SamRead /* implements Alignment */ {
                                       this.pos,
                                       this.pos + this.getReferenceLength() - 1);
     return interval;
+  }
+
+  getSegments(): ContigInterval<string> {
+    if (this._segments) return this._segments;  // use the cache
+
+    var pos = this.pos;
+    var segments = [];
+    var that = this;
+    this.cigarOps.forEach(function (o) {
+      if (o.op === 'M') {
+        segments.push(new ContigInterval(that.ref, pos, pos + o.length - 1));
+      }
+      if (o.op === 'M' || o.op === 'N' || o.op === 'D' || o.op === 'S') {
+        pos = pos + o.length;
+      }
+    });
+
+    return segments;
   }
 
   intersects(interval: ContigInterval<string>): boolean {

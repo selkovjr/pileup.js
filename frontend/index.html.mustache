@@ -131,6 +131,13 @@
       {
         viz: pileup.viz.regions(),
         data: pileup.formats.bigBedRegion({
+          url: '/web/data/xo-blacklist-regions.bed'
+        }),
+        name: 'xO blacklisting'
+      },
+      {
+        viz: pileup.viz.regions(),
+        data: pileup.formats.bigBedRegion({
           url: '/web/data/xt-merged.bb'
         }),
         name: 'xT blacklisting'

@@ -74,124 +74,131 @@ class CoverageCache {
       this.refToMaxCoverage[ref] = 0;
     }
 
-    var counts = this.refToCounts[ref],
-        max = this.refToMaxCoverage[ref],
-        range = read.getInterval(),
+    var
+      counts = this.refToCounts[ref],
+      max = this.refToMaxCoverage[ref];
+      //  range = read.getInterval(),
+
+    for (var range of read.getSegments()) {
+      var
         start = range.start(),
         stop = range.stop();
 
-    var ref_str;
-    var alt_str;
-    var allele;
-    var bin; // pointer to a bin in this.refToCounts (via var counts)
+      var ref_str;
+      var alt_str;
+      var allele;
+      var bin; // pointer to a bin in this.refToCounts (via var counts)
 
-    var reverse = read.flag & 16;
-    for (var pos = start; pos <= stop; pos++) {
-      let c = counts[pos];
-      if (!c) {
-        counts[pos] = c = {count: 0, count_f: 0, count_r: 0};
+      var reverse = read.flag & 16;
+      for (var pos = start; pos <= stop; pos++) {
+        let c = counts[pos];
+        if (!c) {
+          counts[pos] = c = {count: 0, count_f: 0, count_r: 0};
+        }
+        c.count += 1;
+        if (reverse) {
+          c.count_r += 1;
+        }
+        else {
+          c.count_f += 1;
+        }
+        if (c.count > max) max = c.count;
       }
-      c.count += 1;
-      if (reverse) {
-        c.count_r += 1;
-      }
-      else {
-        c.count_f += 1;
-      }
-      if (c.count > max) max = c.count;
-    }
 
-    for (var mm of opInfo.mismatches) {
-      bin = counts[mm.pos];
-      var mismatches;
-      if (bin.mismatches) {
-        mismatches = bin.mismatches;
-      }
-      else {
-        mismatches = bin.mismatches = {all: {}, f: {}, r: {}};
-        bin.ref = this.referenceSource.getRangeAsString({
-          contig: ref,
-          start: mm.pos,
-          stop: mm.pos
-        });
-      }
-      let c = mismatches.all[mm.basePair] || 0;
-      mismatches.all[mm.basePair] = 1 + c;
-
-      if (reverse) {
-        let c = mismatches.r[mm.basePair] || 0;
-        mismatches.r[mm.basePair] = 1 + c;
-      }
-      else {
-        let c = mismatches.f[mm.basePair] || 0;
-        mismatches.f[mm.basePair] = 1 + c;
-      }
-    }
-
-    for (var op of opInfo.ops) {
-      if (op.op === 'I') {
-        ref_str = this.referenceSource.getRangeAsString({
-          contig: ref,
-          start: op.pos - 1,
-          stop: op.pos - 1
-        });
-        alt_str = read._seq.substr(op.qpos - 1, op.length + 1);
-        allele = ref_str + '>' + alt_str;
-        for (let p = op.pos - 1; p <= op.pos; p++) {
-          bin = counts[p];
-          var insertions;
-          if (bin.insertions) {
-            insertions = bin.insertions;
+      for (var mm of opInfo.mismatches) {
+        var mismatches;
+        bin = counts[mm.pos];
+        if (bin) { // bin may not exist in a segmented read (as in transcripts)
+          if (bin.mismatches) {
+            mismatches = bin.mismatches;
           }
           else {
-            insertions = bin.insertions = {all: {}, f: {}, r: {}};
+            mismatches = bin.mismatches = {all: {}, f: {}, r: {}};
+            bin.ref = this.referenceSource.getRangeAsString({
+              contig: ref,
+              start: mm.pos,
+              stop: mm.pos
+            });
           }
-          let c = insertions.all[allele] || 0;
-          insertions.all[allele] = 1 + c;
+          let c = mismatches.all[mm.basePair] || 0;
+          mismatches.all[mm.basePair] = 1 + c;
 
           if (reverse) {
-            let c = insertions.r[allele] || 0;
-            insertions.r[allele] = 1 + c;
+            let c = mismatches.r[mm.basePair] || 0;
+            mismatches.r[mm.basePair] = 1 + c;
           }
           else {
-            let c = insertions.f[allele] || 0;
-            insertions.f[allele] = 1 + c;
+            let c = mismatches.f[mm.basePair] || 0;
+            mismatches.f[mm.basePair] = 1 + c;
           }
         }
       }
-      if (op.op === 'D') {
-        ref_str = this.referenceSource.getRangeAsString({
-          contig: ref,
-          start: op.pos - 1,
-          stop: op.pos + op.length - 1
-        });
-        alt_str = ref_str.substr(0, 1);
-        allele = ref_str + '>' + alt_str;
-        for (let p = op.pos; p < op.pos + op.length; p++) {
-          bin = counts[p];
-          var deletions;
-          if (bin.deletions) {
-            deletions = bin.deletions;
-          }
-          else {
-            deletions = bin.deletions = {all: {}, f: {}, r: {}};
-          }
-          let c = deletions.all[allele] || 0;
-          deletions.all[allele] = 1 + c;
 
-          if (reverse) {
-            let c = deletions.r[allele] || 0;
-            deletions.r[allele] = 1 + c;
+      for (var op of opInfo.ops) {
+        if (op.op === 'I') {
+          ref_str = this.referenceSource.getRangeAsString({
+            contig: ref,
+            start: op.pos - 1,
+            stop: op.pos - 1
+          });
+          alt_str = read._seq.substr(op.qpos - 1, op.length + 1);
+          allele = ref_str + '>' + alt_str;
+          for (let p = op.pos - 1; p <= op.pos; p++) {
+            bin = counts[p];
+            var insertions;
+            if (bin.insertions) {
+              insertions = bin.insertions;
+            }
+            else {
+              insertions = bin.insertions = {all: {}, f: {}, r: {}};
+            }
+            let c = insertions.all[allele] || 0;
+            insertions.all[allele] = 1 + c;
+
+            if (reverse) {
+              let c = insertions.r[allele] || 0;
+              insertions.r[allele] = 1 + c;
+            }
+            else {
+              let c = insertions.f[allele] || 0;
+              insertions.f[allele] = 1 + c;
+            }
           }
-          else {
-            let c = deletions.f[allele] || 0;
-            deletions.f[allele] = 1 + c;
+        }
+        if (op.op === 'D') {
+          ref_str = this.referenceSource.getRangeAsString({
+            contig: ref,
+            start: op.pos - 1,
+            stop: op.pos + op.length - 1
+          });
+          alt_str = ref_str.substr(0, 1);
+          allele = ref_str + '>' + alt_str;
+          for (let p = op.pos; p < op.pos + op.length; p++) {
+            bin = counts[p];
+            var deletions;
+            if (bin.deletions) {
+              deletions = bin.deletions;
+            }
+            else {
+              deletions = bin.deletions = {all: {}, f: {}, r: {}};
+            }
+            let c = deletions.all[allele] || 0;
+            deletions.all[allele] = 1 + c;
+
+            if (reverse) {
+              let c = deletions.r[allele] || 0;
+              deletions.r[allele] = 1 + c;
+            }
+            else {
+              let c = deletions.f[allele] || 0;
+              deletions.f[allele] = 1 + c;
+            }
           }
         }
       }
-    }
 
-    this.refToMaxCoverage[ref] = max;
+      this.refToMaxCoverage[ref] = max;
+    }
   }
 
   maxCoverageForRef(ref: string): number {
