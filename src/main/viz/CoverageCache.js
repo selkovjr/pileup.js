@@ -54,7 +54,7 @@ class CoverageCache {
 
   // Updates reference mismatch information for previously-loaded reads.
   updateMismatches(range: ContigInterval<string>) {
-    var ref = this._canonicalRef(range.contig);
+    var ref = this._canonicalRef(range.contig); // contig name
     this.refToCounts[ref] = {};  // TODO: could be more efficient
     this.refToMaxCoverage[ref] = 0;
     for (var k in this.reads) {
@@ -79,11 +79,12 @@ class CoverageCache {
       max = this.refToMaxCoverage[ref];
       //  range = read.getInterval(),
 
-    for (var range of read.getSegments()) {
+    for (var segment of read.getSegments()) {
       var
-        start = range.start(),
-        stop = range.stop();
+        start = segment.range.start(),
+        stop = segment.range.stop();
 
+      console.log('range', start, stop);
       var ref_str;
       var alt_str;
       var allele;
@@ -105,6 +106,7 @@ class CoverageCache {
         if (c.count > max) max = c.count;
       }
 
+      console.log(opInfo);
       for (var mm of opInfo.mismatches) {
         var mismatches;
         bin = counts[mm.pos];
@@ -134,7 +136,8 @@ class CoverageCache {
         }
       }
 
-      for (var op of opInfo.ops) {
+      // for (var op of opInfo.ops) {
+      for (var op of segment.ops) {
         if (op.op === 'I') {
           ref_str = this.referenceSource.getRangeAsString({
             contig: ref,

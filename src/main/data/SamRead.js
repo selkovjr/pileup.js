@@ -173,28 +173,45 @@ class SamRead /* implements Alignment */ {
 
   getInterval(): ContigInterval<string> {
     if (this._interval) return this._interval;  // use the cache
-    var interval = new ContigInterval(this.ref,
-                                      this.pos,
-                                      this.pos + this.getReferenceLength() - 1);
+    var interval = new ContigInterval(
+      this.ref,
+      this.pos,
+      this.pos + this.getReferenceLength() - 1
+    );
     return interval;
   }
 
+  // This is the equivalent of getInterval() for segmented reads (those containing an N-gap, as in transcripts
   getSegments(): ContigInterval<string> {
     if (this._segments) return this._segments;  // use the cache
 
+    this._segments = [];
+    var current_segment = {ops: []};
     var pos = this.pos;
-    var segments = [];
+    var length = 0;
+
     var that = this;
     this.cigarOps.forEach(function (o) {
-      if (o.op === 'M') {
-        segments.push(new ContigInterval(that.ref, pos, pos + o.length - 1));
-      }
-      if (o.op === 'M' || o.op === 'N' || o.op === 'D' || o.op === 'S') {
-        pos = pos + o.length;
+      if (o.op === 'N' || o.op === 'M' || o.op === 'D') {
+        if (o.op === 'N') {
+          current_segment.range = new ContigInterval(that.ref, pos - length, pos - 1);
+          that._segments.push(Object.assign({}, current_segment));
+          current_segment.ops = [];
+          length = 0;
+        }
+        else {
+          current_segment.ops.push(o);
+          length += o.length;
+        }
+        pos += o.length; // all non-insertions
       }
     });
+    if (length > 0) { // last segment
+      current_segment.range = new ContigInterval(that.ref, pos - length, pos - 1);
+      this._segments.push(current_segment);
+    }
 
-    return segments;
+    return this._segments;
   }
 
   intersects(interval: ContigInterval<string>): boolean {
