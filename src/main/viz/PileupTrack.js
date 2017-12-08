@@ -72,7 +72,7 @@ class PileupTiledCanvas extends TiledCanvas {
         new ContigInterval(range.contig, range.start() - 1, range.stop() + 1);
     var vGroups = this.cache.getGroupsOverlapping(relaxedRange);
     var insertStats = this.options.colorByInsert ? this.cache.getInsertStats() : null;
-    renderPileup(ctx, scale, relaxedRange, insertStats, this.options.colorByStrand, vGroups);
+    renderPileup(ctx, scale, relaxedRange, insertStats, this.options.colorByStrand, this.options.showQuality, vGroups);
   }
 }
 
@@ -90,6 +90,7 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
                       range: ContigInterval<string>,
                       insertStats: ?InsertStats,
                       colorByStrand: boolean,
+                      showQuality: boolean,
                       vGroups: VisualGroup[]) {
   // Should mismatched base pairs be shown as blocks of color or as letters?
   var pxPerLetter = scale(1) - scale(0),
@@ -122,14 +123,36 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
   }
 
   function drawSegment(op, y, vRead) {
+    var i;
+
     switch (op.op) {
       case CigarOp.MATCH:
         ctx.globalAlpha = 0.35;
         if (op.arrow) {
           drawArrow(op.pos, op.length, y, op.arrow);
-        } else {
-          var x = scale(op.pos + 1);
-          ctx.fillRect(x, y, scale(op.pos + op.length + 1) - x, READ_HEIGHT);
+        }
+        else {
+          if (showQuality) {
+            for (i = 0; i < op.length; i += 1) {
+              var index = op.pos - vRead.read.pos + i - 1;
+              var q = vRead.read._qual.charCodeAt(index) - 33;
+              var att = 1;
+              if (q < 40) { att = 7 / 8 };
+              if (q < 35) { att = 5 / 8 };
+              if (q < 25) { att = 3 / 8 };
+              if (q < 20) { att = 2 / 8 };
+              if (q < 10) { att = 1 / 8 };
+              if (q < 2) { att = 0 };
+              ctx.globalAlpha = 0.35 * att;
+              console.log('plotting base', vRead.read._seq.charAt(index), vRead.read._qual.charAt(index), vRead.read._qual.charCodeAt(index) - 33);
+              var x = scale(op.pos + i + 1);
+              ctx.fillRect(x, y, scale(op.pos + i + 2) - x, READ_HEIGHT);
+            }
+          }
+          else {
+            var x = scale(op.pos + 1);
+            ctx.fillRect(x, y, scale(op.pos + op.length + 1) - x, READ_HEIGHT);
+          }
         }
         ctx.globalAlpha = 1.0;
         break;
@@ -279,7 +302,7 @@ class PileupTrack extends React.Component {
   state: State;
   cache: PileupCache;
   tiles: PileupTiledCanvas;
-  static defaultOptions: { viewAsPairs: boolean };
+  static defaultOptions: { viewAsPairs: boolean, showQuality: boolean };
   static getOptionsMenu: (options: Object) => any;
   static handleSelectOption: (key: string, oldOptions: Object) => Object;
 
@@ -405,11 +428,12 @@ class PileupTrack extends React.Component {
   handleOptionsChange(oldOpts: Object) {
     this.tiles.invalidateAll();
 
-    if (oldOpts.viewAsPairs != this.props.options.viewAsPairs) {
+    if (oldOpts.viewAsPairs != this.props.options.viewAsPairs || oldOpts.showQuality != this.props.options.showQuality) {
       this.cache = new PileupCache(this.props.referenceSource, this.props.options.viewAsPairs);
       this.tiles = new PileupTiledCanvas(this.cache, this.props.options);
       this.updateReads(ContigInterval.fromGenomeRange(this.props.range));
-    } else if (oldOpts.colorByInsert != this.props.options.colorByInsert) {
+    }
+    else if (oldOpts.colorByInsert != this.props.options.colorByInsert) {
       this.tiles.update(this.props.options);
       this.tiles.invalidateAll();
       this.updateVisualization();
@@ -654,7 +678,7 @@ class PileupTrack extends React.Component {
         // closer to the click coordinate, rather than the whole visible range.
         vGroups = this.cache.getGroupsOverlapping(range);
 
-    renderPileup(trackingCtx, scale, range, null, false, vGroups);
+    renderPileup(trackingCtx, scale, range, null, false, false, vGroups);
     var vRead = _.find(trackingCtx.hits[0], hit => hit.read);
     var alert = window.alert || console.log;
     if (vRead) {
@@ -704,6 +728,7 @@ class PileupTrack extends React.Component {
 PileupTrack.displayName = 'pileup';
 PileupTrack.defaultOptions = {
   viewAsPairs: true,
+  showQuality: true,
   colorByInsert: true,
   colorByStrand: false
 };
@@ -711,6 +736,7 @@ PileupTrack.defaultOptions = {
 PileupTrack.getOptionsMenu = function(options: Object): any {
   return [
     {key: 'view-pairs', label: 'View as pairs', checked: options.viewAsPairs},
+    {key: 'show-quality', label: 'Display base quality', checked: options.showQuality},
     '-',
     {key: 'color-insert', label: 'Color by insert size', checked: options.colorByInsert},
     {key: 'color-strand', label: 'Color by strand', checked: options.colorByStrand},
@@ -726,15 +752,22 @@ PileupTrack.handleSelectOption = function(key: string, oldOptions: Object): Obje
   if (key == 'view-pairs') {
     opts.viewAsPairs = !opts.viewAsPairs;
     return opts;
-  } else if (key == 'color-insert') {
+  }
+  else if (key == 'show-quality') {
+    opts.showQuality = !opts.showQuality;
+    return opts;
+  }
+  else if (key == 'color-insert') {
     opts.colorByInsert = !opts.colorByInsert;
     if (opts.colorByInsert) opts.colorByStrand = false;
     return opts;
-  } else if (key == 'color-strand') {
+  }
+  else if (key == 'color-strand') {
     opts.colorByStrand = !opts.colorByStrand;
     if (opts.colorByStrand) opts.colorByInsert = false;
     return opts;
-  } else if (key == 'sort') {
+  }
+  else if (key == 'sort') {
     opts.sort = (messageId++);
     return opts;
   }
