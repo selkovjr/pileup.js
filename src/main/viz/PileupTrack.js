@@ -98,12 +98,20 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
       showText = DisplayMode.isText(mode);
 
   function drawArrow(pos: number, refLength: number, top: number, direction: 'L' | 'R') {
+
     var left = scale(pos + 1),
         right = scale(pos + refLength + 1),
         bottom = top + READ_HEIGHT,
         // Arrowheads become a distraction as you zoom out and the reads get
         // shorter. They should never be more than 1/6 the read length.
-        arrowSize = Math.min(READ_STRAND_ARROW_WIDTH, (right - left) / 6);
+        arrowSize;
+
+    if (showQuality) {
+      arrowSize = Math.min(READ_STRAND_ARROW_WIDTH, (right - left) / 2);
+    }
+    else {
+      arrowSize = Math.min(READ_STRAND_ARROW_WIDTH, (right - left) / 6);
+    }
 
     ctx.beginPath();
     if (direction == 'R') {
@@ -112,7 +120,8 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
       ctx.lineTo(right, (top + bottom) / 2);
       ctx.lineTo(right - arrowSize, bottom);
       ctx.lineTo(left, bottom);
-    } else {
+    }
+    else {
       ctx.moveTo(right, top);
       ctx.lineTo(left + arrowSize, top);
       ctx.lineTo(left, (top + bottom) / 2);
@@ -123,38 +132,64 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
   }
 
   function drawSegment(op, y, vRead) {
-    var i;
+
+    function setAlphaAtReadPos (index, vRead) {
+      var q = vRead.read._qual.charCodeAt(index) - 33;
+      var att = 1;
+      if (q < 40) { att = 7 / 8 };
+      if (q < 35) { att = 5 / 8 };
+      if (q < 25) { att = 3 / 8 };
+      if (q < 20) { att = 2 / 8 };
+      if (q < 10) { att = 1 / 8 };
+      if (q < 2) { att = 0 };
+      ctx.globalAlpha = 0.35 * att;
+    }
+
+    function drawBasesWithQuality (y, offset, last_base, vRead) {
+      var i; // segment index
+
+      for (i = offset; i < last_base; i += 1) {
+        setAlphaAtReadPos(op.qpos + i, vRead);
+        var x = scale(op.pos + i + 1);
+        ctx.fillRect(x, y, scale(op.pos + i + 2) - x, READ_HEIGHT);
+      }
+    }
 
     switch (op.op) {
       case CigarOp.MATCH:
-        ctx.globalAlpha = 0.35;
-        if (op.arrow) {
-          drawArrow(op.pos, op.length, y, op.arrow);
+        if (showQuality) {
+          // Render each genomic position as a block or as an arrow
+          ctx.globalAlpha = 0.35;
+
+          if (op.arrow) {
+            if (vRead.strand === '-') {
+              setAlphaAtReadPos(op.qpos, vRead);
+              drawArrow(op.pos, 1, y, op.arrow);
+              drawBasesWithQuality(y, 1, op.length, vRead);
+            }
+            else {
+              drawBasesWithQuality(y, 0, op.length - 1, vRead);
+              setAlphaAtReadPos(op.qpos + op.length - 1, vRead);
+              drawArrow(op.pos + op.length - 1, 1, y, op.arrow);
+            }
+          }
+          else {
+            drawBasesWithQuality(y, 0, op.length, vRead);
+          }
+          ctx.globalAlpha = 1.0;
         }
         else {
-          if (showQuality) {
-            for (i = 0; i < op.length; i += 1) {
-              var index = op.pos - vRead.read.pos + i - 1;
-              var q = vRead.read._qual.charCodeAt(index) - 33;
-              var att = 1;
-              if (q < 40) { att = 7 / 8 };
-              if (q < 35) { att = 5 / 8 };
-              if (q < 25) { att = 3 / 8 };
-              if (q < 20) { att = 2 / 8 };
-              if (q < 10) { att = 1 / 8 };
-              if (q < 2) { att = 0 };
-              ctx.globalAlpha = 0.35 * att;
-              console.log('plotting base', vRead.read._seq.charAt(index), vRead.read._qual.charAt(index), vRead.read._qual.charCodeAt(index) - 33);
-              var x = scale(op.pos + i + 1);
-              ctx.fillRect(x, y, scale(op.pos + i + 2) - x, READ_HEIGHT);
-            }
+          // Original routine rendering a rectangular bar ar an arrow
+          ctx.globalAlpha = 0.35;
+          if (op.arrow) {
+            drawArrow(op.pos, op.length, y, op.arrow);
           }
           else {
             var x = scale(op.pos + 1);
             ctx.fillRect(x, y, scale(op.pos + op.length + 1) - x, READ_HEIGHT);
           }
+          ctx.globalAlpha = 1.0;
         }
-        ctx.globalAlpha = 1.0;
         break;
 
       case CigarOp.DELETE:

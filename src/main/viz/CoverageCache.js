@@ -84,7 +84,6 @@ class CoverageCache {
         start = segment.range.start(),
         stop = segment.range.stop();
 
-      console.log('range', start, stop);
       var ref_str;
       var alt_str;
       var allele;
@@ -106,7 +105,6 @@ class CoverageCache {
         if (c.count > max) max = c.count;
       }
 
-      console.log(opInfo);
       for (var mm of opInfo.mismatches) {
         var mismatches;
         bin = counts[mm.pos];
