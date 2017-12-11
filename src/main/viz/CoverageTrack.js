@@ -109,10 +109,10 @@ function renderBars(ctx: DataCanvasRenderingContext2D,
   // Adjust range start and stop to read ends to avoid plotting ramps to tile boundaries.
   while (!(start in bins) && start < stop) {
     start += 1;
-  };
+  }
   while (!(stop in bins) && stop > start) {
     stop -= 1;
-  };
+  }
   stop += 1;
 
   let {barX1} = binPos(start, (start in bins) ? bins[start].count : 0);
