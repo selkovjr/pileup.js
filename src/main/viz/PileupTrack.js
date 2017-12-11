@@ -141,7 +141,7 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
       if (q < 25) { att = 3 / 8 }
       if (q < 20) { att = 2 / 8 }
       if (q < 10) { att = 1 / 8 }
-      if (q < 2) { att = 0 };
+      if (q < 2) { att = 0 }
       ctx.globalAlpha = 0.35 * att;
     }
 
