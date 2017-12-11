@@ -144,6 +144,16 @@ if (%arg<filter>) {
   $filter = "filter=%arg<filter>;";
 }
 
+my $pairs = '';
+if (%arg<pair> or %arg<pairs> or %arg<paired>) {
+  $pairs = True;
+}
+
+my $qual = '';
+if (%arg<qual> or %arg<quality>) {
+  $qual = True;
+}
+
 my $select = '';
 if (%arg<select>) {
   $select = %arg<select>;
@@ -175,6 +185,8 @@ my %template_data =
   ref => $ref,
   downsample => $downsample,
   filter => $filter,
+  pairs => $pairs,
+  qual => $qual,
   select => $select,
   coords => $coords,
   contig => $contig,

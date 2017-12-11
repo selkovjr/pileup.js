@@ -228,6 +228,17 @@
   });
 
   g_pileup_gui.bam = '{{bam}}';
+
+  g_pileup_gui.viewAsPairs = null;
+{{#pairs}}
+  g_pileup_gui.viewAsPairs = true;
+{{/pairs}}
+
+  g_pileup_gui.qual = null;
+{{#qual}}
+  g_pileup_gui.showQuality = true;
+{{/qual}}
+
   g_pileup_gui.mark = null;
 {{#mark}}
   g_pileup_gui.mark = {{mark}};
