@@ -416,7 +416,11 @@ class PileupTrack extends React.Component {
   }
 
   componentDidMount() {
+    this.props.options.showQuality = g_pileup_gui.showQuality;
+
+    this.props.options.viewAsPairs = g_pileup_gui.viewAsPairs;
     this.cache = new PileupCache(this.props.referenceSource, this.props.options.viewAsPairs);
+
     this.tiles = new PileupTiledCanvas(this.cache, this.props.options);
 
     this.props.source.on('newdata', range => {
@@ -762,10 +766,10 @@ class PileupTrack extends React.Component {
 
 PileupTrack.displayName = 'pileup';
 PileupTrack.defaultOptions = {
-  viewAsPairs: true,
-  showQuality: true,
-  colorByInsert: true,
-  colorByStrand: false
+  viewAsPairs: false,
+  showQuality: false,
+  colorByInsert: false,
+  colorByStrand: true
 };
 
 PileupTrack.getOptionsMenu = function(options: Object): any {
