@@ -103,9 +103,20 @@ function renderBars(ctx: DataCanvasRenderingContext2D,
 
   var mismatchBins = ({} : {[key:number]: BinSummary});  // keep track of which ones have mismatches
   var vBasePosY = yScale(0);  // the very bottom of the canvas
-  var start = range.start(),
+  var start = range.start(), // range is tile range, not read range
       stop = range.stop();
+
+  // Adjust range start and stop to read ends to avoid plotting ramps to tile boundaries.
+  while (!(start in bins) && start < stop) {
+    start += 1;
+  };
+  while (!(stop in bins) && stop > start) {
+    stop -= 1;
+  };
+  stop += 1;
+
   let {barX1} = binPos(start, (start in bins) ? bins[start].count : 0);
+
   ctx.fillStyle = style.COVERAGE_BIN_COLOR;
   ctx.beginPath();
   ctx.moveTo(barX1, vBasePosY);
@@ -116,9 +127,19 @@ function renderBars(ctx: DataCanvasRenderingContext2D,
     let {barX1, barX2, barY} = binPos(pos, bin.count);
     ctx.lineTo(barX1, barY);
     ctx.lineTo(barX2, barY);
+
+    // if (showPadding) {
+    //   ctx.lineTo(barX2, vBasePosY);
+    //   ctx.lineTo(barX2 + 1, vBasePosY);
+    // }
+    // The above piece works with padding enabled, but when it is disabled, the 3'-end is rendered with a ramp down to the next position.
+    // Instead, the following kludgy bit works in both cases.
+    ctx.lineTo(barX2, vBasePosY);
     if (showPadding) {
-      ctx.lineTo(barX2, vBasePosY);
       ctx.lineTo(barX2 + 1, vBasePosY);
+    }
+    else {
+      ctx.lineTo(barX2, vBasePosY);
     }
 
     if (SHOW_MISMATCHES && !_.isEmpty(bin.mismatches)) {
