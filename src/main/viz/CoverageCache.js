@@ -79,7 +79,7 @@ class CoverageCache {
       max = this.refToMaxCoverage[ref];
       //  range = read.getInterval(),
 
-    for (var segment of read.getSegments()) {
+    for (var segment of read.getSegments(opInfo)) {
       var
         start = segment.range.start(),
         stop = segment.range.stop();

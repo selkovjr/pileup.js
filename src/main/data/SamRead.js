@@ -181,17 +181,18 @@ class SamRead /* implements Alignment */ {
     return interval;
   }
 
-  // This is the equivalent of getInterval() for segmented reads (those containing an N-gap, as in transcripts
-  getSegments(): ContigInterval<string> {
+  // This is the equivalent of getInterval() for segmented reads (those containing an N-gap, as in transcripts.
+  // The resulting segments contain exonic intervals and segmented OpInfo lists correspoding to those intervals.
+  getSegments(opInfo): ContigInterval<string> {
     if (this._segments) return this._segments;  // use the cache
 
     this._segments = [];
     var current_segment = {ops: []};
-    var pos = this.pos;
-    var length = 0;
+    var pos = this.pos; // reference start position of a segment
+    var length = 0; // reference length of a segment
 
     var that = this;
-    this.cigarOps.forEach(function (o) {
+    opInfo.ops.forEach(function (o) {
       if (o.op === 'N' || o.op === 'M' || o.op === 'D') {
         if (o.op === 'N') {
           current_segment.range = new ContigInterval(that.ref, pos - length, pos - 1);
@@ -204,6 +205,10 @@ class SamRead /* implements Alignment */ {
           length += o.length;
         }
         pos += o.length; // all non-insertions
+      }
+      else {
+        // insertions are zero-length in reference co-ordinates
+        current_segment.ops.push(o);
       }
     });
     if (length > 0) { // last segment
