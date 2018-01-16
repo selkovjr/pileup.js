@@ -1,5 +1,4 @@
 #!/usr/bin/env perl6
-
 # header {{{1
 v6;
 
@@ -89,7 +88,6 @@ my $bucket = 'clinical-data-processing-complete';
 if %arg<bucket> {
   $bucket = %arg<bucket>;
 }
-say $*ERR: "bucket: $bucket";
 
 my $panel = 'xO';
 if %arg<panel> {
@@ -144,6 +142,11 @@ if (%arg<filter>) {
   $filter = "filter=%arg<filter>;";
 }
 
+my $chr = '';
+if %arg<chr> {
+  $chr = 'chr;'
+}
+
 my $pairs = '';
 if (%arg<pair> or %arg<pairs> or %arg<paired>) {
   $pairs = True;
@@ -186,6 +189,7 @@ my %template_data =
   downsample => $downsample,
   filter => $filter,
   pairs => $pairs,
+  chr => $chr,
   qual => $qual,
   select => $select,
   coords => $coords,

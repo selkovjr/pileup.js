@@ -32,8 +32,11 @@ for $q.split(/<[&;]>/) -> $p {
     say $*ERR: "$p -> %arg{$p}";
   }
 }
-# This should be an option
-%arg<coords> ~~ s/chr//;
+
+# This is now an option, but there must be an intelligent way of doing this
+unless %arg<chr> {
+  %arg<coords> ~~ s/chr//;
+}
 #}}}
 
 # order/run attributes {{{1
@@ -41,7 +44,6 @@ my $bucket = 'clinical-data-processing-complete';
 if %arg<bucket> {
   $bucket = %arg<bucket>;
 }
-say $*ERR: "bucket: $bucket";
 
 my $panel = 'xO';
 if %arg<panel> {

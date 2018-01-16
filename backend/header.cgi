@@ -39,7 +39,6 @@ my $bucket = 'clinical-data-processing-complete';
 if %arg<bucket> {
   $bucket = %arg<bucket>;
 }
-say $*ERR: "bucket: $bucket";
 
 my $panel = 'xO';
 if %arg<panel> {
