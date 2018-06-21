@@ -71,7 +71,6 @@ if %*ENV<QUERY_STRING> {
       say $*ERR: "$p -> %arg{$p}";
     }
   }
-  say $*ERR: Dump(%arg);
 
   if not (%arg<coords> or %arg<bam> or %arg<aws> or %arg<order>) { # elaborate!
     usage();
@@ -84,7 +83,7 @@ else {
 #}}}
 
 # order/run attributes {{{1
-my $bucket = 'clinical-data-processing-complete';
+my $bucket = %*ENV<DEFAULT_AWS_BUCKET>;
 if %arg<bucket> {
   $bucket = %arg<bucket>;
 }
@@ -213,6 +212,9 @@ if ($blacklist) {
   };
 }
 
+if %arg<message> {
+  %template_data<message> = %arg<message>;
+}
 if %arg<bam> {
   %template_data<local> = True;
   %template_data<bam> = %arg<bam>;

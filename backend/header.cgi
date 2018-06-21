@@ -35,7 +35,7 @@ for $q.split(/<[&;]>/) -> $p {
 #}}}
 
 # order/run attributes {{{1
-my $bucket = 'clinical-data-processing-complete';
+my $bucket = %*ENV<DEFAULT_AWS_BUCKET>;
 if %arg<bucket> {
   $bucket = %arg<bucket>;
 }
@@ -72,7 +72,12 @@ if %arg<bam> {
   $data = %arg<bam>
 }
 elsif %arg<aws> {
-  $data = "s3://$bucket/{%arg<aws>}";
+  if %arg<aws> ~~ /^ s3:/ {
+    $data = %arg<aws>;
+  }
+  else {
+    $data = "s3://$bucket/{%arg<aws>}";
+  }
 }
 elsif %arg<order> {
   if %arg<run> {
@@ -110,6 +115,10 @@ print $*ERR: color('reset');
 print $*ERR: "\n";
 
 my ($stderr, $stderr-fh) = tempfile(:prefix('samtools-header-stderr'), :unlink);
+
+my $local_index = "{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.dedup.bam.bai";
+note "rm -f /data1/selkov_workdir/src/pileup.js/backend/$local_index";
+shell "rm -f /data1/selkov_workdir/src/pileup.js/backend/$local_index";
 
 my $result = chomp qq:x{$command 2> $stderr};
 

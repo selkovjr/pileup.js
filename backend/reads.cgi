@@ -40,7 +40,7 @@ unless %arg<chr> {
 #}}}
 
 # order/run attributes {{{1
-my $bucket = 'clinical-data-processing-complete';
+my $bucket = %*ENV<DEFAULT_AWS_BUCKET>;
 if %arg<bucket> {
   $bucket = %arg<bucket>;
 }
@@ -77,7 +77,12 @@ if %arg<bam> {
   $data = %arg<bam>
 }
 elsif %arg<aws> {
-  $data = "s3://$bucket/{%arg<aws>}";
+  if %arg<aws> ~~ /^ s3:/ {
+    $data = %arg<aws>;
+  }
+  else {
+    $data = "s3://$bucket/{%arg<aws>}";
+  }
 }
 elsif %arg<order> {
   if %arg<run> {
