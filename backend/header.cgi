@@ -99,7 +99,7 @@ else {
   exit;
 }
 
-my $command = qq{/home/selkov/bin/samtools view -H '$data'};
+my $command = qq{samtools view -H '$data'};
 
 my $basename = IO::Path.new($*PROGRAM-NAME).basename;
 my $path = $*PROGRAM-NAME.substr(0, $*PROGRAM-NAME.index($basename));
@@ -117,8 +117,8 @@ print $*ERR: "\n";
 my ($stderr, $stderr-fh) = tempfile(:prefix('samtools-header-stderr'), :unlink);
 
 my $local_index = "{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.dedup.bam.bai";
-note "rm -f /data1/selkov_workdir/src/pileup.js/backend/$local_index";
-shell "rm -f /data1/selkov_workdir/src/pileup.js/backend/$local_index";
+note "rm -f /home/user/src/pileup.js/backend/$local_index";
+shell "rm -f /home/user/src/pileup.js/backend/$local_index";
 
 my $result = chomp qq:x{$command 2> $stderr};
 

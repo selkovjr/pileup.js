@@ -118,10 +118,10 @@ if (%arg<alt>) {
 
 my $command;
 if (%arg<filter>) {
-  $command = qq{/home/selkov/bin/samtools view $downsample '$data' %arg<coords> $subcommand_alt 2> $stderr | egrep -i '%arg<filter>'};
+  $command = qq{samtools view $downsample '$data' %arg<coords> $subcommand_alt 2> $stderr | egrep -i '%arg<filter>'};
 }
 else {
-  $command = qq{/home/selkov/bin/samtools view $downsample $data %arg<coords> $subcommand_alt 2> $stderr};
+  $command = qq{samtools view $downsample $data %arg<coords> $subcommand_alt 2> $stderr};
 }
 
 my $basename = IO::Path.new($*PROGRAM-NAME).basename;
