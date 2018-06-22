@@ -50,13 +50,13 @@
   // We are going to use the same data source for multiple tracks
   var readSource = pileup.formats.reads({
 {{#local}}
-    url: '/reads.cgi?{{downsample}}{{filter}}{{chr}}coords=<range>;bam={{bam}}'
+    url: '/backend/reads.cgi?{{downsample}}{{filter}}{{chr}}coords=<range>;bam={{bam}}'
 {{/local}}
 {{#aws_path}}
-    url: '/reads.cgi?{{downsample}}{{filter}}{{chr}}coords=<range>;bucket={{bucket}};aws={{aws}}'
+    url: '/backend/reads.cgi?{{downsample}}{{filter}}{{chr}}coords=<range>;bucket={{bucket}};aws={{aws}}'
 {{/aws_path}}
 {{#aws_detail}}
-    url: '/reads.cgi?{{downsample}}{{filter}}{{chr}}coords=<range>;bucket={{bucket}};panel={{panel}};order={{order}};run={{run}};type={{type}};rel={{rel}};product={{product}};sample={{sample}}'
+    url: '/backend/reads.cgi?{{downsample}}{{filter}}{{chr}}coords=<range>;bucket={{bucket}};panel={{panel}};order={{order}};run={{run}};type={{type}};rel={{rel}};product={{product}};sample={{sample}}'
 {{/aws_detail}}
   });
 
