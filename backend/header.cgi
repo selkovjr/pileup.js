@@ -20,16 +20,16 @@ for $q.split(/<[&;]>/) -> $p {
     my ($k, $v) = $p.split('=');
     if $v {
       %arg{$k} = $v;
-      say $*ERR: "$k -> %arg{$k}";
+      note "$k -> %arg{$k}";
     }
     else {
       %arg{$k} = '';
-      say $*ERR: "$k -> %arg{$k}";
+      note "$k -> %arg{$k}";
     }
   }
-  else {
+  elsif $p {
     %arg{$p} = True;
-    say $*ERR: "$p -> %arg{$p}";
+    note "$p -> %arg{$p}";
   }
 }
 #}}}
@@ -90,10 +90,10 @@ elsif %arg<order> {
 else {
   say "Status: 201 Backend Error\n";
   say 'incorrect URL arguments';
-  print Dump(%arg);
+  print Dump(%arg, :color(False));
 
   print $*ERR: color('yellow');
-  print Dump(%arg);
+  note Dump(%arg);
   print $*ERR: color('reset');
   print $*ERR: "\n";
   exit;
