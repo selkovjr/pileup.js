@@ -9,7 +9,7 @@ use Terminal::ANSIColor;
 use Data::Dump;
 
 print "Content-type: text/plain\n";
-print "Access-Control-Allow-Origin: *\n";
+print "Access-Control-Allow-Origin: *\n\n";
 #}}}
 
-say Dump %*ENV;
+say Dump(%*ENV, :color(False));
