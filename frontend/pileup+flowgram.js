@@ -64,7 +64,7 @@ function flowgram_panel () {
     // Call the function with the URL we want to load, but then chain the
     // promise then() method on to the end of it. This contains two callbacks
     load_flowgram (
-      '/flowgram.cgi',
+      '/backend/flowgram.cgi',
       {
         bam: g_pileup_gui.bam,
         flag: read.flag,
