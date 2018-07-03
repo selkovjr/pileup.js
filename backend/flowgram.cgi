@@ -1,10 +1,12 @@
 #!/usr/bin/env python2.7
 
+import sys
+sys.path.insert(0, "/home/user/lib/torrentPy")
+
 import numpy
 import torrentPy
 from copy import deepcopy
 
-import sys
 import os
 import cgi
 import cgitb; cgitb.enable() # Optional; good for debugging
