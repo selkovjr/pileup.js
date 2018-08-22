@@ -8,8 +8,8 @@ use File::Temp;
 use Terminal::ANSIColor;
 use Data::Dump;
 
-print "Content-type: text/plain\n";
-print "Access-Control-Allow-Origin: *\n";
+say 'Content-type: text/plain';
+say 'Access-Control-Allow-Origin: *';
 #}}}
 
 # query args {{{1
@@ -20,16 +20,13 @@ for $q.split(/<[&;]>/) -> $p {
     my ($k, $v) = $p.split('=');
     if $v {
       %arg{$k} = $v;
-      note "$k -> %arg{$k}";
     }
     else {
       %arg{$k} = '';
-      note "$k -> %arg{$k}";
     }
   }
   elsif $p {
     %arg{$p} = True;
-    note "$p -> %arg{$p}";
   }
 }
 
@@ -95,12 +92,9 @@ elsif %arg<order> {
 else {
   say "Status: 201 Backend Error\n";
   say 'incorrect URL arguments';
-  print Dump(%arg, :color(False));
+  say Dump(%arg, :color(False));
 
-  print $*ERR: color('yellow');
   note Dump(%arg);
-  print $*ERR: color('reset');
-  print $*ERR: "\n";
   exit;
 }
 
@@ -126,18 +120,16 @@ else {
 
 my $basename = IO::Path.new($*PROGRAM-NAME).basename;
 my $path = $*PROGRAM-NAME.substr(0, $*PROGRAM-NAME.index($basename));
-print $*ERR: color('blue');
-print $*ERR: $path;
-print $*ERR: color('bold blue');
-print $*ERR: $basename;
-print $*ERR: color('reset');
-print $*ERR: ": ";
-print $*ERR: color('green');
-print $*ERR: $command;
-print $*ERR: color('reset');
-print $*ERR: "\n";
+note color('blue'), $path, color('bold blue'), $basename, color('reset'),
+  ": ",
+  color('green'), $command, color('reset');
 
-my $result = chomp qq:x{$command};
+
+my $result;
+indir tempdir(:prefix('samtools-view-'), '*******'), {
+  $result = chomp qq:x{$command};
+};
+
 
 my $err = False;
 my $message = '';

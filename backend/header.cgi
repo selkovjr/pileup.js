@@ -10,7 +10,6 @@ use Data::Dump;
 
 say "Content-type: text/plain";
 say "Access-Control-Allow-Origin: *";
-say '';
 #}}}
 
 # query args {{{1
@@ -21,16 +20,13 @@ for $q.split(/<[&;]>/) -> $p {
     my ($k, $v) = $p.split('=');
     if $v {
       %arg{$k} = $v;
-      note "$k -> %arg{$k}";
     }
     else {
       %arg{$k} = '';
-      note "$k -> %arg{$k}";
     }
   }
   elsif $p {
     %arg{$p} = True;
-    note "$p -> %arg{$p}";
   }
 }
 #}}}
@@ -91,12 +87,8 @@ elsif %arg<order> {
 else {
   say "Status: 201 Backend Error\n";
   say 'incorrect URL arguments';
-  print Dump(%arg, :color(False));
-
-  print $*ERR: color('yellow');
+  say Dump(%arg, :color(False));
   note Dump(%arg);
-  print $*ERR: color('reset');
-  print $*ERR: "\n";
   exit;
 }
 
@@ -104,22 +96,11 @@ my $command = qq{samtools view -H '$data'};
 
 my $basename = IO::Path.new($*PROGRAM-NAME).basename;
 my $path = $*PROGRAM-NAME.substr(0, $*PROGRAM-NAME.index($basename));
-print $*ERR: color('blue');
-print $*ERR: $path;
-print $*ERR: color('bold blue');
-print $*ERR: $basename;
-print $*ERR: color('reset');
-print $*ERR: ": ";
-print $*ERR: color('green');
-print $*ERR: $command;
-print $*ERR: color('reset');
-print $*ERR: "\n";
+note color('blue'), $path, color('bold blue'), $basename, color('reset'),
+  ": ",
+  color('green'), $command, color('reset');
 
 my ($stderr, $stderr-fh) = tempfile(:prefix('samtools-header-stderr'), :unlink);
-
-my $local_index = "{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.dedup.bam.bai";
-note "rm -f /home/user/src/pileup.js/backend/$local_index";
-shell "rm -f /home/user/src/pileup.js/backend/$local_index";
 
 my $result = chomp qq:x{$command 2> $stderr};
 
@@ -135,10 +116,7 @@ if ($err) {
   say 'Error getting bam header with samtools';
   print $message;
 
-  print $*ERR: color('yellow');
-  print $*ERR: $message;
-  print $*ERR: color('reset');
-  print $*ERR: "\n";
+  note color('yellow'), $message, color('reset');
 }
 else {
   say ''; # finish the HTTP header

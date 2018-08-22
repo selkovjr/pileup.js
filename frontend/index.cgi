@@ -11,22 +11,16 @@ my $basename = IO::Path.new($*PROGRAM-NAME).basename;
 my $path = $*PROGRAM-NAME.substr(0, $*PROGRAM-NAME.index($basename));
 
 sub log_message ($message) {
-  print $*ERR: color('blue');
-  print $*ERR: $path;
-  print $*ERR: color('bold blue');
-  print $*ERR: $basename;
-  print $*ERR: color('reset');
-  print $*ERR: ": ";
-  print $*ERR: color('green');
-  print $*ERR: $message;
-  print $*ERR: color('reset');
-  print $*ERR: "\n";
+  note color('blue'), $path, color('bold blue'), $basename, color('reset'),
+    ': ',
+    color('green'), $message, color('reset');
 }
 
 log_message('start');
 
-print "Content-type: text/html\n";
-print "Access-Control-Allow-Origin: *\n\n";
+say "Content-type: text/html";
+say "Access-Control-Allow-Origin: *";
+say '';
 #}}}
 
 my $template_engine = Template::Mustache.new(:from<.>, :extension<.mustache>);
@@ -59,16 +53,13 @@ if %*ENV<QUERY_STRING> {
       my ($k, $v) = $p.split('=');
       if $v {
         %arg{$k} = $v;
-        say $*ERR: "$k -> %arg{$k}";
       }
       else {
         %arg{$k} = Any;
-        say $*ERR: "$k -> %arg{$k}";
       }
     }
     else {
       %arg{$p} = True;
-      say $*ERR: "$p -> %arg{$p}";
     }
   }
 
@@ -238,15 +229,10 @@ else {
   say "Status: 201 Backend Error\n";
   say 'incorrect URL arguments';
   print Dump(%arg);
-
-  print $*ERR: color('yellow');
-  print Dump(%arg);
-  print $*ERR: color('reset');
-  print $*ERR: "\n";
+  note color('yellow'), Dump(%arg), color('reset');
   exit;
 }
 
 log_message('rendering');
 say $template_engine.render('index.html', %template_data);
 log_message('done');
-
