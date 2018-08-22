@@ -220,10 +220,13 @@ function create(spec: SamSpec): AlignmentDataSource {
   }
 
   var o = {
+    fetchHeader: fetchHeader,
+
     rangeChanged: function(newRange: GenomeRange) {
       if (_.isEmpty(contigNames)) {
-        // Checking for contigNames is useless because both header requests are initiated almost
-        // simultaneously at contigNames is empty in both cases.
+        // Checking for contigNames is done to avoid making
+        // useless header requests if it has already been made
+        // by the top-level scritp in index.html.mustache
         fetchHeader().then(() => {
           fetch(newRange).done();
         });

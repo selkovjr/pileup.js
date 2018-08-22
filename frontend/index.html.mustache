@@ -222,29 +222,35 @@
 
   var range = {contig: '{{contig}}', start: {{start}}, stop: {{stop}}};
 
-  var g_pileup_gui = pileup.create(document.getElementById('pileup'), {
-    range: range,
-    tracks: sources
-  });
+  var g_pileup_gui;
 
-  g_pileup_gui.bam = '{{bam}}';
+  // Fetch the bam header synchronously to avoid fetching it twice
+  // from the the coverage track and from the pileup track.
+  readSource.fetchHeader().then(() => {
+    g_pileup_gui = pileup.create(document.getElementById('pileup'), {
+      range: range,
+      tracks: sources
+    });
 
-  g_pileup_gui.viewAsPairs = null;
+    g_pileup_gui.bam = '{{bam}}';
+
+    g_pileup_gui.viewAsPairs = null;
 {{#pairs}}
-  g_pileup_gui.viewAsPairs = true;
+    g_pileup_gui.viewAsPairs = true;
 {{/pairs}}
 
-  g_pileup_gui.qual = null;
+    g_pileup_gui.qual = null;
 {{#qual}}
-  g_pileup_gui.showQuality = true;
+    g_pileup_gui.showQuality = true;
 {{/qual}}
 
-  g_pileup_gui.mark = null;
+    g_pileup_gui.mark = null;
 {{#mark}}
-  g_pileup_gui.mark = {{mark}};
+    g_pileup_gui.mark = {{mark}};
 {{/mark}}
 
-  flowgram_panel();
+    flowgram_panel();
+  }); // BAM header fetch
 
 {{#select}}
   // a fire-once listener
