@@ -1,4 +1,4 @@
-#!/usr/bin/env perl6
+#!/opt/rakudo-pkg/bin/perl6
 
 # header {{{1
 v6;
@@ -8,8 +8,9 @@ use File::Temp;
 use Terminal::ANSIColor;
 use Data::Dump;
 
-print "Content-type: text/plain\n";
-print "Access-Control-Allow-Origin: *\n";
+say "Content-type: text/plain";
+say "Access-Control-Allow-Origin: *";
+say '';
 #}}}
 
 # query args {{{1
