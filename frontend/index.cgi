@@ -1,4 +1,4 @@
-#!/usr/bin/env perl6
+#!/opt/rakudo-pkg/bin/perl6
 # header {{{1
 v6;
 
