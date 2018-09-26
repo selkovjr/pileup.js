@@ -60,6 +60,10 @@
 {{/aws_detail}}
   });
 
+  var range = {contig: '{{contig}}', start: {{start}}, stop: {{stop}}};
+
+  var g_pileup_gui;
+
   var sources = [
     {
       viz: pileup.viz.scale(),
@@ -68,165 +72,259 @@
     {
       viz: pileup.viz.location(),
       name: ' '
-    },
-    // {
-    //   viz: pileup.viz.genes(),
-    //   data: pileup.formats.bigBed({
-    //     // url: 'https://www.biodalliance.org/datasets/ensGene.bb'
-    //     // url: 'https://www.biodalliance.org/datasets/GRCh37/gencode.v19.basic.bb'
-    //     url: '/data/ensGene.bb'
-    //   }),
-    //   name: 'gene'
-    // }
+    }
   ];
 
-  if ('{{panel}}' === 'xO') {
-    sources.push (
-      {
-        viz: pileup.viz.regions(),
-        data: pileup.formats.bigBedRegion({
-          url: '/data/exonic-targets.bb'
-        }),
-        name: 'exon'
-      },
-      {
-        viz: pileup.viz.regions(),
-        data: pileup.formats.bigBedRegion({
-          // url: '/data/OCP.20150630.designed-trimmed.bb'
-          // url: '/data/POLARIS_XPLORA_NGS_MANIFEST.txt.1.0.0_with_genename.bb'
-          // url: '/data/test.bb'
-          url: '/data/ONCOSEQ_V4_FOR_TEMPUS.num.bb'
-        }),
-        name: 'xO primary'
-      },
-      {
-        viz: pileup.viz.regions(),
-        data: pileup.formats.bigBedRegion({
-          url: '/data/michigan-targets.bb'
-        }),
-        name: 'xO padded'
-      },
-      {
-        viz: pileup.viz.regions(),
-        data: pileup.formats.bigBedRegion({
-          url: '/data/xt-primary-targets.bb'
-        }),
-        name: 'xT primary'
-      },
-      {
-        viz: pileup.viz.regions(),
-        data: pileup.formats.bigBedRegion({
-          // url: '/data/160111_HG19_OncoPanelV4_XC_EZ_HX1_capture_targets.bb'
-          url: '/data/xo-probes.bb'
-        }),
-        name: 'xO probes'
-      },
-      {
-        viz: pileup.viz.regions(),
-        data: pileup.formats.bigBedRegion({
-          url: '/data/xt-regions.bb'
-        }),
-        name: 'xT probes'
-      },
-      {
-        viz: pileup.viz.regions(),
-        data: pileup.formats.bigBedRegion({
-          url: '/data/xo-blacklist-regions.bed'
-        }),
-        name: 'xO blacklisting'
-      },
-      {
-        viz: pileup.viz.regions(),
-        data: pileup.formats.bigBedRegion({
-          url: '/data/xt-merged.bb'
-        }),
-        name: 'xT blacklisting'
-      }
-    );
-  }
-  else { // assume exome
-    sources.push (
-      {
-        viz: pileup.viz.regions(),
-        data: pileup.formats.bigBedRegion({
-          url: '/data/exons.bb'
-        }),
-        name: 'Exons'
-      },
-      {
-        viz: pileup.viz.regions(),
-        data: pileup.formats.bigBedRegion({
-          url: '/data/exome-targets.bb'
-        }),
-        name: 'Exome targets'
-      },
-      {
-        viz: pileup.viz.regions(),
-        data: pileup.formats.bigBedRegion({
-          url: '/data/mask.bb'
-        }),
-        name: 'RepeatMasker'
-      }
-    );
-  }
 
-  sources.push (
-  {{#blacklist}}
-    {
-      viz: pileup.viz.regions(),
-      data: pileup.formats.bigBedRegion({
-        url: '/data/mask.bb'
-      }),
-      name: 'RepeatMasker'
-    },
-    {
-      viz: pileup.viz.regions(),
-      data: pileup.formats.bigBedRegion({
-        url: '/data/{{url}}'
-        // url: '/file.cgi?file={{url}}'
-      }),
-      name: 'Repeat'
-    },
-    {
-      viz: pileup.viz.blacklist(),
-      data: pileup.formats.vcf({
-        url: '/data/blacklist-xo-manual.vcf'
-      }),
-      name: 'Black list'
-    },
-  {{/blacklist}}
-    {
-      viz: pileup.viz.coverage(),
-      data: readSource,
-      cssClass: 'normal',
-      name: 'Coverage'
-    },
-    {
-      viz: pileup.viz.genome(),
-      isReference: true,
-      data: pileup.formats.twoBit({
-        url: 'https://www.biodalliance.org/datasets/{{ref}}.2bit'
-        //url: '/data/{{ref}}.2bit'
-      }),
-      name: 'Reference'
-    },
-    {
-      viz: pileup.viz.pileup({
-        colorByStrand: true
-      }),
-      data: readSource,
-      cssClass: 'normal',
-      name: 'Alignments'
+  // Fetch the bam header synchronously to avoid fetching it
+  // for the coverage track and again for the pileup track.
+  // Also, use header information to determine target panel
+  // and reference assembly.
+  readSource.fetchHeader().then((header) => {
+    var assembly = 'GRCh37';
+    var panel = '{{panel}}';
+    var bam = '{{bam}}';
+
+    if (header.match(/GRCh38/)) {
+      assembly = 'GRCh38';
     }
-  );
 
-  var range = {contig: '{{contig}}', start: {{start}}, stop: {{stop}}};
+    if (bam.match(/_RS_/) || header.match(/_RS/)) {
+      panel = 'RS';
+    }
+    else if (bam.match(/_xE_/)) {
+      panel = 'xE';
+    }
+    else if (bam.match(/_xF_/)) {
+      panel = 'xF';
+    }
+    else if (bam.match(/_xO_/)) {
+      panel = 'xO';
+    }
+    else if (bam.match(/_xT_/)) {
+      panel = 'xT';
+    }
 
-  var g_pileup_gui;
+    console.log(assembly, panel);
 
-  // Fetch the bam header synchronously to avoid fetching it twice
-  // from the the coverage track and from the pileup track.
-  readSource.fetchHeader().then(() => {
+    if (assembly === 'GRCh37') {
+      sources.push (
+        {
+          viz: pileup.viz.genes(),
+          data: pileup.formats.bigBed({
+            // url: 'https://www.biodalliance.org/datasets/GRCh37/gencode.v19.basic.bb'
+            url: '/web/data/gencode.v19.basic.bb'
+          }),
+          name: 'gene'
+        }
+      );
+    }
+    else {
+      sources.push (
+        {
+          viz: pileup.viz.genes(),
+          data: pileup.formats.bigBed({
+            // url: 'https://www.biodalliance.org/datasets/GRCh37/gencode.v19.basic.bb'
+            url: '/data/genes/refseq.genes.{{contig}}.bb'
+          }),
+          name: 'gene'
+        }
+      );
+    }
+
+    if (panel === 'xO') {
+      sources.push (
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/exonic-targets.bb'
+          }),
+          name: 'exon'
+        },
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/xt-pseudogene-homology.bb'
+          }),
+          name: 'pseudogene'
+        },
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            // url: '/data/OCP.20150630.designed-trimmed.bb'
+            // url: '/data/POLARIS_XPLORA_NGS_MANIFEST.txt.1.0.0_with_genename.bb'
+            // url: '/data/test.bb'
+            url: '/data/ONCOSEQ_V4_FOR_TEMPUS.num.bb'
+          }),
+          name: 'xO primary'
+        },
+        // {
+        //   viz: pileup.viz.regions(),
+        //   data: pileup.formats.bigBedRegion({
+        //     url: '/data/michigan-targets.bb'
+        //   }),
+        //   name: 'xO padded'
+        // },
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            // url: '/data/160111_HG19_OncoPanelV4_XC_EZ_HX1_capture_targets.bb'
+            url: '/data/xo-probes.bb'
+          }),
+          name: 'xO probes'
+        }
+      );
+    {{#blacklist}}
+      sources.push (
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/mask.bb'
+          }),
+          name: 'RepeatMasker'
+        },
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/repeats.bb'
+          }),
+          name: 'repeats'
+        },
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/xt-merged.bb'
+          }),
+          name: 'BL region'
+        },
+        {
+          viz: pileup.viz.blacklist(),
+          data: pileup.formats.vcf({
+            url: '/data/blacklist-xo-manual.vcf'
+          }),
+          name: 'blacklisted'
+        }
+      );
+    {{/blacklist}}
+    }
+
+    else if (panel === 'xT') {
+      sources.push (
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/exonic-targets.bb'
+          }),
+          name: 'exon'
+        },
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/xt-pseudogene-homology.bb'
+          }),
+          name: 'pseudogene'
+        },
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/xt-primary-targets.bb'
+          }),
+          name: 'xT primary'
+        },
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/xt-regions.bb'
+          }),
+          name: 'xT probes'
+        }
+      );
+    {{#blacklist}}
+      sources.push (
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/mask.bb'
+          }),
+          name: 'RepeatMasker'
+        },
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/repeats.bb'
+          }),
+          name: 'repeats'
+        },
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/xt-merged.bb'
+          }),
+          name: 'BL region'
+        },
+        {
+          viz: pileup.viz.blacklist(),
+          data: pileup.formats.vcf({
+            url: '/data/combined.vcf'
+          }),
+          name: 'blacklisted'
+        }
+      );
+    {{/blacklist}}
+    }
+
+    // else { // assume exome
+    //   sources.push (
+    //     {
+    //       viz: pileup.viz.regions(),
+    //       data: pileup.formats.bigBedRegion({
+    //         url: '/data/exonic-targets.bb'
+    //       }),
+    //       name: 'exon'
+    //     },
+    //     {
+    //       viz: pileup.viz.regions(),
+    //       data: pileup.formats.bigBedRegion({
+    //         url: '/data/exome-targets.bb'
+    //       }),
+    //       name: 'Exome targets'
+    //     },
+    //     {
+    //       viz: pileup.viz.regions(),
+    //       data: pileup.formats.bigBedRegion({
+    //         url: '/data/mask.bb'
+    //       }),
+    //       name: 'RepeatMasker'
+    //     }
+    //   );
+    // }
+
+    sources.push (
+      {
+        viz: pileup.viz.coverage(),
+        data: readSource,
+        cssClass: 'normal',
+        name: 'Coverage'
+      },
+      {
+        viz: pileup.viz.genome(),
+        isReference: true,
+        data: pileup.formats.twoBit({
+          // url: 'https://www.biodalliance.org/datasets/{{ref}}.2bit'
+          url: '/data/{{ref}}.2bit'
+        }),
+        name: 'Reference'
+      },
+      {
+        viz: pileup.viz.pileup({
+          colorByStrand: true
+        }),
+        data: readSource,
+        cssClass: 'normal',
+        name: 'Alignments'
+      }
+    );
+
     g_pileup_gui = pileup.create(document.getElementById('pileup'), {
       range: range,
       tracks: sources
