@@ -229,7 +229,7 @@ function flowgram_panel () {
             if (match = e.target.id.match(/^(ref|query)-char-(\d+)$/)) {
               if (match[1] === 'ref') {
                 offset = parseInt(match[2], 10) - sc_right;
-                g_pileup_gui.refToCursors(read.pos + offset);
+                g_pileup_gui.flowgram.refToCursors(read.pos + offset);
               }
               if (match[1] === 'query') {
                 // need a read-to-ref mapping done to move cursors according to read position
@@ -717,7 +717,7 @@ function flowgram_panel () {
 
         g_pileup_gui.flowgram = flowgram();
         g_pileup_gui.flowgram.render();
-        g_pileup_gui.refToCursors(click_x);
+        g_pileup_gui.flowgram.refToCursors(click_x);
         } // data.signal exists (Torrent)
 
       } // Valid response
