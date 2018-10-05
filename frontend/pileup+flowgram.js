@@ -240,7 +240,6 @@ function flowgram_panel () {
 
 
         // Render flowgram
-        if (data.signal) {
         var flowgram = function () {
           var bar_width = 8;
           var frame_center_mark;
@@ -652,9 +651,11 @@ function flowgram_panel () {
               highlighted_query_node = query_node_list[read_cursor_pos];
 
               // Move flowgram cursor
-              var flow = flow_position(data, ref_offset);
-              top_pointer.attr('transform', 'translate(' + x(flow) + ')');
-              bottom_pointer.attr('transform', 'translate(' + x(flow) + ')');
+              if (data.signal) {
+                var flow = flow_position(data, ref_offset);
+                top_pointer.attr('transform', 'translate(' + x(flow) + ')');
+                bottom_pointer.attr('transform', 'translate(' + x(flow) + ')');
+              }
             }
           };
 
@@ -695,15 +696,17 @@ function flowgram_panel () {
           };
 
           var updateFrame = function (pos) { // pos is cursor position relative to contig start
-            var ref_offset = pos - read.pos; // 0 at alignment start
-            console.log('updateFrame: frame center', ref_offset);
-            var flow = flow_position(data, ref_offset);
-            if (pos >= interval.start && pos <= interval.stop) {
-              frame_center_mark.setAttribute('x', x(flow) - bar_width / 2 - 1);
-              d3.selectAll('#frame-center-mark').style('display', 'block');
-            }
-            else {
-              d3.selectAll('#frame-center-mark').style('display', 'none');
+            if (data.signal) {
+              var ref_offset = pos - read.pos; // 0 at alignment start
+              console.log('updateFrame: frame center', ref_offset);
+              var flow = flow_position(data, ref_offset);
+              if (pos >= interval.start && pos <= interval.stop) {
+                frame_center_mark.setAttribute('x', x(flow) - bar_width / 2 - 1);
+                d3.selectAll('#frame-center-mark').style('display', 'block');
+              }
+              else {
+                d3.selectAll('#frame-center-mark').style('display', 'none');
+              }
             }
           };
 
@@ -716,8 +719,9 @@ function flowgram_panel () {
         }; // flowgram()
 
         g_pileup_gui.flowgram = flowgram();
-        g_pileup_gui.flowgram.render();
-        g_pileup_gui.flowgram.refToCursors(click_x);
+        if (data.signal) {
+          g_pileup_gui.flowgram.render();
+          g_pileup_gui.flowgram.refToCursors(click_x);
         } // data.signal exists (Torrent)
 
       } // Valid response
