@@ -4,7 +4,7 @@
 
   <script src="//cdn.jsdelivr.net/bluebird/3.4.5/bluebird.js"></script>
 
-  <script src="//d3js.org/d3.v4.js"></script>
+  <script src="//d3js.org/d3.v3.js"></script>
   <script src="/pileup/lib/pileup.js"></script>
   <script src="/pileup/lib/split.js"></script>
   <script src="/pileup/pileup+flowgram.js"> </script>
@@ -89,19 +89,20 @@
       assembly = 'GRCh38';
     }
 
+    console.log(bam, assembly, panel);
     if (bam.match(/_RS_/) || header.match(/_RS/)) {
       panel = 'RS';
     }
-    else if (bam.match(/_xE_/)) {
+    else if (bam.match(/_xE/)) {
       panel = 'xE';
     }
-    else if (bam.match(/_xF_/)) {
+    else if (bam.match(/_xF/)) {
       panel = 'xF';
     }
-    else if (bam.match(/_xO_/)) {
+    else if (bam.match(/_xO/)) {
       panel = 'xO';
     }
-    else if (bam.match(/_xT_/)) {
+    else if (bam.match(/_xT/)) {
       panel = 'xT';
     }
 
@@ -144,7 +145,7 @@
         {
           viz: pileup.viz.regions(),
           data: pileup.formats.bigBedRegion({
-            url: '/data/xt-pseudogene-homology.bb'
+            url: '/data/xo-pseudogene-homology.bb'
           }),
           name: 'pseudogene'
         },
