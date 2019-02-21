@@ -36,62 +36,14 @@ unless %arg<chr> {
 }
 #}}}
 
-# order/run attributes {{{1
-my $bucket = %*ENV<DEFAULT_AWS_BUCKET>;
-if %arg<bucket> {
-  $bucket = %arg<bucket>;
-}
-
-my $panel = 'xO';
-if %arg<panel> {
-  $panel = %arg<panel>;
-}
-
-my $type = 'TN';
-if %arg<type> {
-  $type = %arg<type>;
-}
-
-my $rel = 'M';
-if %arg<rel> {
-  $rel = %arg<rel>;
-}
-
-my $product = 'R';
-if %arg<product> {
-  $product = %arg<product>;
-}
-
-my $sample = 'T';
-if %arg<sample> {
-  $sample = %arg<sample>;
-}
-#}}}
-
 
 my $data;
 if %arg<bam> {
   $data = %arg<bam>
 }
-elsif %arg<aws> {
-  if %arg<aws> ~~ /^ s3:/ {
-    $data = %arg<aws>;
-  }
-  else {
-    $data = "s3://$bucket/{%arg<aws>}";
-  }
-}
-elsif %arg<order> {
-  if %arg<run> {
-    $data = "s3://$bucket/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}/{%arg<run>}/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.dedup.bam"
-  }
-  else {
-    $data = "s3://$bucket/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}/{%arg<order>}_{$type}_{$rel}_{$product}_{$panel}_{$sample}.dedup.bam"
-  }
-}
 else {
   say "Status: 201 Backend Error\n";
-  say 'incorrect URL arguments';
+  say 'Missing BAM parameter';
   say Dump(%arg, :color(False));
 
   note Dump(%arg);
@@ -100,9 +52,9 @@ else {
 
 my ($stderr, $stderr-fh) = tempfile(:prefix('samtools-view-stderr-'), :unlink);
 
-my $downsample = '';
+my $downsample-arg = '';
 if (%arg<downssample>) {
-  $downsample = " -s %arg<downssample>";
+  $downsample-arg = "-s %arg<downssample> ";
 }
 
 my $subcommand_alt = '';
@@ -110,13 +62,24 @@ if (%arg<alt>) {
   $subcommand_alt = '| ./select-mismatches';
 }
 
-my $command;
+my $filter-subcommand = '';
 if (%arg<filter>) {
-  $command = qq{samtools view$downsample '$data' %arg<coords> $subcommand_alt 2> $stderr | egrep -i '%arg<filter>'};
+  $filter-subcommand = qq{ | egrep '^@|%arg<filter>'};
+  $downsample-arg = '';
 }
-else {
-  $command = qq{samtools view$downsample '$data' %arg<coords> $subcommand_alt 2> $stderr};
+
+my $fill-in-md = True;
+my $md-subcommand = '';
+if $fill-in-md {
+ if %arg<ref> eq 'hg38' {
+    $md-subcommand = qq{ | samtools calmd -S - /data3/selkov_workdir/data/reference/GRCh38.analysis_set.fa 2>> $stderr | grep -v '^@' $subcommand_alt 2>> $stderr};
+  }
+  else {
+    $md-subcommand = qq{ | samtools calmd -S - /data3/selkov_workdir/data/reference/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa 2>> $stderr | grep -v '^@' $subcommand_alt 2>> $stderr};
+  }
 }
+
+my $command = qq{samtools view -h $downsample-arg'$data' %arg<coords> 2> $stderr$filter-subcommand$md-subcommand};
 
 my $basename = IO::Path.new($*PROGRAM-NAME).basename;
 my $path = $*PROGRAM-NAME.substr(0, $*PROGRAM-NAME.index($basename));
