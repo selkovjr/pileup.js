@@ -4,7 +4,7 @@
  */
 'use strict';
 
-import type {PartialGenomeRange} from './types';
+import type {GenomeRange, PartialGenomeRange} from './types';
 import copyToClipboard from './Clipboard';
 
 import React from 'react';
@@ -19,7 +19,7 @@ type Props = {
   onChange: (newRange: GenomeRange) => void;
 };
 
-class Controls extends React.Component {
+class Controls extends React.Component<Props> {
   props: Props;
   state: void;  // no state
 
@@ -51,14 +51,14 @@ class Controls extends React.Component {
       if (altContig) range.contig = altContig;
     }
 
-    return (_.extend({}, this.props.range, range) : any);
+    return (_.extend(_.clone(this.props.range), range) : any);
   }
 
-  handleContigChange(e: SyntheticEvent) {
+  handleContigChange(e: SyntheticEvent<>) {
     this.props.onChange(this.completeRange({contig: this.refs.contig.value}));
   }
 
-  handleFormSubmit(e: SyntheticEvent) {
+  handleFormSubmit(e: SyntheticEvent<>) {
     e.preventDefault();
     var range = this.completeRange(utils.parseRange(this.refs.position.value));
     this.props.onChange(range);
