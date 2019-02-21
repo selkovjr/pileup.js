@@ -1,6 +1,8 @@
 /* @flow */
 'use strict';
 
+import type {GenomeRange} from './types';
+
 import Interval from './Interval';
 import {flatMap} from './utils';
 
@@ -15,12 +17,7 @@ class ContigInterval<T: (number|string)> {
   interval: Interval;
 
   constructor(contig: T, start: number, stop: number) {
-    if (typeof contig === 'string' || contig instanceof String) {
-      this.contig = contig.replace(/chr/, '');
-    }
-    else {
-      this.contig = contig;
-    }
+    this.contig = contig;
     this.interval = new Interval(start, stop);
   }
 
@@ -35,48 +32,39 @@ class ContigInterval<T: (number|string)> {
     return this.interval.length();
   }
 
+  // Intersects function, allowing for 'chr17' vs. '17'-style mismatches.
   intersects(other: ContigInterval<T>): boolean {
-    return (this.contig === other.contig &&
-            this.interval.intersects(other.interval));
-  }
-
-  // Like intersects(), but allows 'chr17' vs. '17'-style mismatches.
-  chrIntersects(other: ContigInterval<T>): boolean {
     return (this.chrOnContig(other.contig) &&
             this.interval.intersects(other.interval));
   }
 
   containsInterval(other: ContigInterval<T>): boolean {
-    return (this.contig === other.contig &&
+    return (this.chrOnContig(other.contig) &&
             this.interval.containsInterval(other.interval));
   }
 
   isAdjacentTo(other: ContigInterval<T>): boolean {
-    return (this.contig === other.contig &&
+    return (this.chrOnContig(other.contig) &&
             (this.start() == 1 + other.stop() ||
              this.stop() + 1 == other.start()));
   }
 
   isCoveredBy(intervals: ContigInterval<T>[]): boolean {
-    var ivs = intervals.filter(iv => iv.contig === this.contig)
+    var ivs = intervals.filter(iv => this.chrOnContig(iv.contig))
                        .map(iv => iv.interval);
     return this.interval.isCoveredBy(ivs);
   }
 
   containsLocus(contig: T, position: number): boolean {
-    return this.contig === contig &&
-           this.interval.contains(position);
-  }
-
-  // Like containsLocus, but allows 'chr17' vs '17'-style mismatches
-  chrContainsLocus(contig: T, position: number): boolean {
     return this.chrOnContig(contig) &&
            this.interval.contains(position);
   }
 
   // Is this read on the given contig? (allowing for chr17 vs 17-style mismatches)
   chrOnContig(contig: T): boolean {
-    return (this.contig === contig || this.contig === 'chr' + contig || 'chr' + this.contig === contig);
+    return (this.contig === contig ||
+            this.contig === 'chr' + contig ||
+            'chr' + this.contig === contig);
   }
 
   clone(): ContigInterval<T> {
@@ -89,7 +77,7 @@ class ContigInterval<T: (number|string)> {
    */
   complementIntervals(intervals: ContigInterval<T>[]): ContigInterval<T>[] {
     return this.interval.complementIntervals(
-        flatMap(intervals, ci => ci.contig === this.contig ? [ci.interval] : []))
+        flatMap(intervals, ci => this.chrOnContig(ci.contig) ? [ci.interval] : []))
         .map(iv => new ContigInterval(this.contig, iv.start, iv.stop));
   }
 
@@ -116,11 +104,16 @@ class ContigInterval<T: (number|string)> {
     };
   }
 
+  round(size: number, zeroBased: boolean): ContigInterval<T> {
+    var newInterval = this.interval.round(size, zeroBased);
+    return new ContigInterval(this.contig, newInterval.start, newInterval.stop);
+  }
+
   // Comparator for use with Array.prototype.sort
-  static compare(a: ContigInterval, b: ContigInterval): number {
-    if (a.contig > b.contig) {
+  static compare<T: (string|number)>(a: ContigInterval<T>, b: ContigInterval<T>): number {
+    if (a.contig.toString() > b.contig.toString()) {
       return -1;
-    } else if (a.contig < b.contig) {
+    } else if (a.contig.toString() < b.contig.toString()) {
       return +1;
     } else {
       return a.start() - b.start();
@@ -129,7 +122,7 @@ class ContigInterval<T: (number|string)> {
 
   // Sort an array of intervals & coalesce adjacent/overlapping ranges.
   // NB: this may re-order the intervals parameter
-  static coalesce(intervals: ContigInterval[]): ContigInterval[] {
+  static coalesce<T: (string|number)>(intervals: ContigInterval<T>[]): ContigInterval<T>[] {
     intervals.sort(ContigInterval.compare);
 
     var rs = [];
@@ -152,7 +145,7 @@ class ContigInterval<T: (number|string)> {
   }
 
   static fromGenomeRange(range: GenomeRange): ContigInterval<string> {
-    return new ContigInterval(range.contig, range.start, range.stop);
+    return new ContigInterval(range.contig.toString(), range.start, range.stop);
   }
 }
 
