@@ -5,7 +5,6 @@
 
 
 import type {TwoBitSource} from './sources/TwoBitDataSource';
-import type {VizWithOptions} from './types';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -13,11 +12,12 @@ import d3utils from './viz/d3utils';
 import _ from 'underscore';
 import d3 from '../lib/minid3';
 
-export type VizProps = {
+export type VizProps<T: any> = {
   width: number;
   height: number;
   range: GenomeRange;
   referenceSource: TwoBitSource;
+  source: T;
   options: any;
 };
 
@@ -27,11 +27,18 @@ type Props = {
   onRangeChange: (newRange: GenomeRange) => void;
   referenceSource: TwoBitSource;
   source: any;
+  options: ?Object;
 };
 
-class VisualizationWrapper extends React.Component {
+type State = {
+  width: number;
+  height: number;
+  updateSize: boolean;
+};
+
+class VisualizationWrapper extends React.Component<Props, State> {
   props: Props;
-  state: {width: number; height: number};
+  state: State;
   hasDragBeenInitialized: boolean;
   onResizeListener: Object;  //listener that handles window.onresize event
 
@@ -39,17 +46,24 @@ class VisualizationWrapper extends React.Component {
     super(props);
     this.hasDragBeenInitialized = false;
     this.state = {
+      updateSize: false,
       width: 0,
       height: 0
     };
   }
 
   updateSize(): any {
-    var parentDiv = ReactDOM.findDOMNode(this).parentNode;
-    this.setState({
-      width: parentDiv.offsetWidth,
-      height: parentDiv.offsetHeight
-    });
+    var thisNode = ReactDOM.findDOMNode(this)
+    if (thisNode && thisNode instanceof Element) { // check for getContext
+      var parentDiv = thisNode.parentNode;
+      if (parentDiv && parentDiv instanceof HTMLElement) { // check for getContext
+        this.setState({
+          updateSize: false,
+          width: parentDiv.offsetWidth,
+          height: parentDiv.offsetHeight
+        });
+      }
+    }
   }
 
   componentDidMount(): any {
@@ -133,12 +147,23 @@ class VisualizationWrapper extends React.Component {
     }
   }
 
+  componentWillUpdate(nextProps:Props, nextState: Object) {
+    if (nextState.updateSize) {
+      this.updateSize();
+    }
+  }
+
   render(): any {
     const range = this.props.range;
     const component = this.props.visualization.component;
     if (!range) {
-      return <EmptyTrack className={component.displayName} />;
+      if (component.displayName != null)
+        return <EmptyTrack className={component.displayName} />;
+      else
+        return <EmptyTrack className='EmptyTrack' />;
     }
+
+    var options = _.extend(_.clone(this.props.visualization.options),this.props.options);
 
     var el = React.createElement(component, ({
       range: range,
@@ -146,9 +171,9 @@ class VisualizationWrapper extends React.Component {
       referenceSource: this.props.referenceSource,
       width: this.state.width,
       height: this.state.height,
-      options: this.props.visualization.options,
+      options: options,
       parent: this
-    } : VizProps));
+    } : VizProps<any>));
 
     return <div className='drag-wrapper'>{el}</div>;
   }
@@ -157,7 +182,7 @@ VisualizationWrapper.displayName = 'VisualizationWrapper';
 
 
 type EmptyTrackProps = {className: string};
-class EmptyTrack extends React.Component<void, EmptyTrackProps, void> {
+class EmptyTrack extends React.Component<EmptyTrackProps> {
   render() {
     var className = this.props.className + ' empty';
     return <div className={className}></div>;

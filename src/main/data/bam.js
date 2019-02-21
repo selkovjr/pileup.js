@@ -47,6 +47,8 @@ function readAlignment(view: jDataView, pos: number,
   pos += 4;
 
   if (pos + readLength > view.byteLength) {
+    // We cannot replace with an error here, because promise depends on response.
+    // $FlowIgnore: TODO remove flow suppression. 
     return null;
   }
 
@@ -183,8 +185,7 @@ function fetchAlignments(remoteFile: RemoteFile,
       } else {
         newChunk = null;  // This is most likely EOF
       }
-
-      fetch((newChunk ? [newChunk] : []).concat(_.rest(chunks)));
+      fetch((newChunk !== null ? [newChunk] : []).concat(_.rest(chunks)));
     });
   }
 
@@ -204,7 +205,6 @@ class Bam {
               indexChunks?: Object) {
     this.remoteFile = remoteFile;
     this.index = remoteIndexFile ? new BaiFile(remoteIndexFile, indexChunks) : null;
-
     this.hasIndexChunks = !!indexChunks;
 
     var sizePromise = this.index ? this.index.getHeaderSize() : Q.when(2 * 65535);
@@ -255,20 +255,21 @@ class Bam {
    * This is insanely inefficient and should not be used outside of testing.
    */
   readAtOffset(offset: VirtualOffset): Q.Promise<SamRead> {
-    return this.remoteFile.getBytes(offset.coffset, kMaxFetch).then(gzip => {
-      var buf = utils.inflateGzip(gzip);
+    var readPromise: Q.Promise<SamRead> = this.remoteFile.getBytes(offset.coffset, kMaxFetch).then(gzip => {
+      var buf: ArrayBuffer = utils.inflateGzip(gzip);
       var jv = new jDataView(buf, 0, buf.byteLength, true /* little endian */);
       var readData = readAlignment(jv, offset.uoffset, offset, '');
-      if (!readData) {
-        throw `Unable to read alignment at ${offset} in ${this.remoteFile.url}`;
-      } else {
-        // Attach the human-readable ref name
-        var read = readData.read;
-        return this.header.then(header => {
-          read.ref = header.references[read.refID].name;
-          return read;
-        });
-      }
+
+      // Attach the human-readable ref name
+      var read: SamRead = readData.read;
+      return read;
+    });
+
+
+    return Q.all([readPromise, this.header])
+    .then(([read, header]) => {
+      read.ref = header.references[read.refID].name;
+      return read;
     });
   }
 
@@ -302,17 +303,20 @@ class Bam {
     var index = this.index;
 
     return this.getContigIndex(range.contig).then(({idx, name}) => {
-      var def = Q.defer();
+      var def: Q.Deferred<SamRead[]> = Q.defer();
       // This happens in the next event loop to give listeners a chance to register.
       Q.when().then(() => { def.notify({status: 'Fetching BAM index'}); });
 
       var idxRange = new ContigInterval(idx, range.start(), range.stop());
 
-      utils.pipePromise(
-        def,
-        index.getChunksForInterval(idxRange).then(chunks => {
+      var promise: Q.Promise<SamRead[]> = index.getChunksForInterval(idxRange).then(chunks => {
           return fetchAlignments(this.remoteFile, name, idxRange, contained, chunks);
-        }));
+        }).then(samReads => {
+          return samReads;
+        });
+
+      utils.pipePromise(def, promise);
+        
       return def.promise;
     });
   }

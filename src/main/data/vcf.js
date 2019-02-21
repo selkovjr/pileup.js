@@ -7,25 +7,28 @@
  */
 'use strict';
 
-import type ContigInterval from '../ContigInterval';
 import type AbstractFile from '../AbstractFile';
 import type Q from 'q';
+import _ from 'underscore';
+import ContigInterval from '../ContigInterval';
+import {Variant, VariantContext} from "./variant";
 
-export type Variant = {
-  contig: string;
-  position: number;
-  ref: string;
-  alt: string;
-  qual: number;
-  filter: string;
-  vcfLine: string;
-}
 
 // This is a minimally-parsed line for facilitating binary search.
 type LocusLine = {
   contig: string;
   position: number;
   line: string;
+}
+
+function extractSamples(header: string[]): string[] {
+
+  var line = _.filter(header, h => h.startsWith("#CHROM"))[0].split('\t');
+
+  // drop first 8 titles. See vcf header specification 1.3: https://samtools.github.io/hts-specs/VCFv4.2.pdf
+  var samples = line.splice(9);
+
+  return samples;
 }
 
 
@@ -41,18 +44,58 @@ function extractLocusLine(vcfLine: string): LocusLine {
 }
 
 
-function extractVariant(vcfLine: string): Variant {
+function extractVariantContext(samples: string[], vcfLine: string): VariantContext {
   var parts = vcfLine.split('\t');
+  var maxFrequency = null;
+  var minFrequency = null;
+  var genotypeSamples = [];
 
-  return {
-    contig: parts[0],
-    position: Number(parts[1]),
+  if (parts.length>=7){
+    var params = parts[7].split(';'); // process INFO field
+    for (var i=0;i<params.length;i++) {
+      var param = params[i];
+      if (param.startsWith("AF=")) {
+        maxFrequency = 0.0;
+        minFrequency = 1.0;
+        var frequenciesStrings = param.substr(3).split(",");
+        for (var j=0;j<frequenciesStrings.length;j++) {
+          var currentFrequency = parseFloat(frequenciesStrings[j]);
+          maxFrequency = Math.max(maxFrequency, currentFrequency);
+          minFrequency = Math.min(minFrequency, currentFrequency);
+        }
+      }
+    }
+
+    // process genotype information for each sample
+    if (parts.length > 9) {
+      var sample_i = 0; // keeps track of which sample we are processing
+      for (i = 9; i < parts.length; i++) {
+        var genotype = parts[i].split(':')[0].split("/");
+        if (genotype.length == 2) {
+          if (parseInt(genotype[0]) == 1 || parseInt(genotype[1]) == 1) {
+            // TODO do you have to overwrite with concat?
+            genotypeSamples = genotypeSamples.concat(samples[sample_i]);
+          }
+        }
+        sample_i++;
+      }
+    }
+  }
+  var contig = parts[0];
+  var position = Number(parts[1]);
+
+  return new VariantContext(new Variant({
+    contig: contig,
+    position: position,
+    id: parts[2],
     ref: parts[3],
     alt: parts[4],
     qual: parts[5],
     filter: parts[6],
-    vcfLine
-  };
+    majorFrequency: maxFrequency,
+    minorFrequency: minFrequency,
+    vcfLine,
+  }), genotypeSamples);
 }
 
 
@@ -88,8 +131,10 @@ function lowestIndex<T>(haystack: T[], needle: T, compare: (a: T, b: T)=>number)
 class ImmediateVcfFile {
   lines: LocusLine[];
   contigMap: {[key:string]:string};  // canonical map
+  samples: string[];
 
-  constructor(lines: LocusLine[]) {
+  constructor(samples: string[], lines: LocusLine[]) {
+    this.samples = samples;
     this.lines = lines;
     this.contigMap = this.extractContigs();
   }
@@ -116,7 +161,7 @@ class ImmediateVcfFile {
     return contigMap;
   }
 
-  getFeaturesInRange(range: ContigInterval<string>): Variant[] {
+  getFeaturesInRange(range: ContigInterval<string>): VariantContext[] {
     var lines = this.lines;
     var contig = this.contigMap[range.contig];
     if (!contig) {
@@ -144,7 +189,7 @@ class ImmediateVcfFile {
       result.push(lines[i]);
     }
 
-    return result.map(line => extractVariant(line.line));
+    return result.map(line => extractVariantContext(this.samples, line.line));
   }
 }
 
@@ -158,23 +203,39 @@ class VcfFile {
 
     this.immediate = this.remoteFile.getAllString().then(txt => {
       // Running this on a 12MB string takes ~80ms on my 2014 Macbook Pro
-      var lines = txt.split('\n')
+      var txtLines = txt.split('\n');
+      var lines =  txtLines
                      .filter(line => (line.length && line[0] != '#'))
                      .map(extractLocusLine);
-      return lines;
-    }).then(lines => {
+
+      var header = txtLines.filter(line => (line.length && line[0] == '#'));
+
+      var samples = extractSamples(header);
+
+      return [samples, lines];
+    }).then(results => {
+      var samples = results[0];
+      var lines = results[1];
       // Sorting this structure from the 12MB VCF file takes ~60ms
       lines.sort(compareLocusLine);
-      return new ImmediateVcfFile(lines);
+      return new ImmediateVcfFile(samples, lines);
     });
     this.immediate.done();
   }
 
-  getFeaturesInRange(range: ContigInterval<string>): Q.Promise<Variant[]> {
+  getSamples(): Q.Promise<string[]> {
+    return this.immediate.then(immediate => {
+      return immediate.samples;
+    });
+  }
+
+  getFeaturesInRange(range: ContigInterval<string>): Q.Promise<VariantContext[]> {
     return this.immediate.then(immediate => {
       return immediate.getFeaturesInRange(range);
     });
   }
 }
 
-module.exports = VcfFile;
+module.exports = {
+  VcfFile
+};

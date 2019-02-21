@@ -148,7 +148,13 @@ function IncompleteChunkError(message) {
     this.name = "IncompleteChunkError";
     this.message = (message || "");
 }
-IncompleteChunkError.prototype = Error.prototype;
+IncompleteChunkError.prototype = Object.create(Error.prototype, {
+    constructor: {
+        value: IncompleteChunkError,
+        writable: true,
+        configurable: true
+    }
+});
 
 /**
  * Wraps a parsing attempt, captures errors related to
@@ -238,6 +244,8 @@ class TwoBit {
             unpackDNA(dataView, start % 4, stop - start + 1), start, header)
             .join('');
       });
+    }).then(p => {
+      return p;
     });
   }
 
@@ -251,7 +259,7 @@ class TwoBit {
       var maybeSeq = _.findWhere(header.sequences, {name: contig}) ||
                      _.findWhere(header.sequences, {name: 'chr' + contig});
       if (maybeSeq === null || maybeSeq === undefined) {
-        throw 'Invalid contig: ' + contig + 'in TwoBit';
+        throw 'Invalid contig: ' + contig;
       }
       var seq = maybeSeq;  // for flow, see facebook/flow#266
 
@@ -266,6 +274,8 @@ class TwoBit {
           });
         }
       );
+    }).then(p => {
+      return p;
     });
   }
 }
