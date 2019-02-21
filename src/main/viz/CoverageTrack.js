@@ -4,12 +4,12 @@
  */
 'use strict';
 
-import type {Alignment, AlignmentDataSource} from '../Alignment';
-import type Interval from '../Interval';
-import type {TwoBitSource} from '../sources/TwoBitDataSource';
+import type {AlignmentDataSource} from '../Alignment';
 import type {DataCanvasRenderingContext2D} from 'data-canvas';
 import type {BinSummary} from './CoverageCache';
 import type {Scale} from './d3utils';
+import type {State} from '../types';
+import type {VizProps} from '../VisualizationWrapper';
 
 import React from 'react';
 import Portal from 'react-portal';
@@ -58,13 +58,11 @@ class CoverageTiledCanvas extends TiledCanvas {
     this.options = options;
   }
 
-  yScaleForRef(ref: string): (y: number) => number {
+  yScaleForRef(ref: string, bottomPadding: number, topPadding:number): (y: number) => number {
     var maxCoverage = this.cache.maxCoverageForRef(ref);
-
-    var padding = 10;  // TODO: move into style
     return scale.linear()
       .domain([maxCoverage, 0])
-      .range([padding, this.height - padding])
+      .range([bottomPadding, this.height - topPadding])
       .nice();
   }
 
@@ -72,7 +70,7 @@ class CoverageTiledCanvas extends TiledCanvas {
          xScale: (x: number)=>number,
          range: ContigInterval<string>) {
     var bins = this.cache.binsForRef(range.contig);
-    var yScale = this.yScaleForRef(range.contig);
+    var yScale = this.yScaleForRef(range.contig, 10, 10);
     var relaxedRange = new ContigInterval(
         range.contig, range.start() - 1, range.stop() + 1);
     renderBars(ctx, xScale, yScale, relaxedRange, bins, this.options);
@@ -127,19 +125,9 @@ function renderBars(ctx: DataCanvasRenderingContext2D,
     let {barX1, barX2, barY} = binPos(pos, bin.count);
     ctx.lineTo(barX1, barY);
     ctx.lineTo(barX2, barY);
-
-    // if (showPadding) {
-    //   ctx.lineTo(barX2, vBasePosY);
-    //   ctx.lineTo(barX2 + 1, vBasePosY);
-    // }
-    // The above piece works with padding enabled, but when it is disabled, the 3'-end is rendered with a ramp down to the next position.
-    // Instead, the following kludgy bit works in both cases.
-    ctx.lineTo(barX2, vBasePosY);
     if (showPadding) {
-      ctx.lineTo(barX2 + 1, vBasePosY);
-    }
-    else {
       ctx.lineTo(barX2, vBasePosY);
+      ctx.lineTo(barX2 + 1, vBasePosY);
     }
 
     if (SHOW_MISMATCHES && !_.isEmpty(bin.mismatches)) {
@@ -201,16 +189,6 @@ function renderBars(ctx: DataCanvasRenderingContext2D,
   });
 }
 
-type Props = {
-  width: number;
-  height: number;
-  range: GenomeRange;
-  source: AlignmentDataSource;
-  referenceSource: TwoBitSource;
-  options: {
-    vafColorThreshold: number
-  }
-};
 
 export class CoveragePopup extends React.Component {
   render() {
@@ -228,14 +206,14 @@ export class CoveragePopup extends React.Component {
   }
 }
 
-class CoverageTrack extends React.Component {
-  props: Props;
-  state: void;
+class CoverageTrack extends React.Component<VizProps<AlignmentDataSource>, State> {
+  props: VizProps<AlignmentDataSource>;
+  state: State; // no state, used to make flow happy
   cache: CoverageCache;
   tiles: CoverageTiledCanvas;
   static defaultOptions: Object;
 
-  constructor(props: Props) {
+  constructor(props: VizProps<AlignmentDataSource>) {
     super(props);
     this.state = {};
   }
@@ -344,7 +322,7 @@ class CoverageTrack extends React.Component {
     ctx.reset();
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-    var yScale = this.tiles.yScaleForRef(range.contig);
+    var yScale = this.tiles.yScaleForRef(range.contig, 10, 10);
 
     this.tiles.renderToScreen(ctx, range, this.getScale());
     this.renderTicks(ctx, yScale);
@@ -464,6 +442,5 @@ CoverageTrack.defaultOptions = {
   // not colored in the bar chart. This draws attention to high-VAF mismatches.
   vafColorThreshold: 0.2
 };
-
 
 module.exports = CoverageTrack;
