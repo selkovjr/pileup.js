@@ -37,8 +37,8 @@ function strandFlagToString(reverseStrand: number): Strand {
   return reverseStrand ? '-' : '+';
 }
 
-function firstOfPairFlagToString(firstOfPair: number): Orientation {
-  return firstOfPair ? 'f' : 'r';
+function firstOfPairFlagToString(firstOfPair: number): boolean {
+  return firstOfPair;
 }
 
 
@@ -161,7 +161,7 @@ class SamRead /* implements Alignment */ {
     return strandFlagToString(this.getFlag() & bamTypes.Flags.READ_STRAND);
   }
 
-  getOrientation(): Orientation {
+  getFirstOfPair(): boolean {
     return firstOfPairFlagToString(this.getFlag() & bamTypes.Flags.FIRST_OF_PAIR);
   }
 
