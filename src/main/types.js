@@ -11,10 +11,22 @@
 
 // Public API
 
-import type React from 'react';
+import React from 'react';
+
+export const AlleleFrequencyStrategy = {
+  Minor : {name: "Minor"},
+  Major : {name: "Major"},
+};
+
+
+export type NetworkStatus = {numRequests?: number, status?: string};
+
+export type State = {
+  networkStatus: ?NetworkStatus;
+};
 
 export type VizWithOptions = {
-  component: ReactClass;
+  component: Class<React.Component<any, any>>;
   options: ?Object;
 }
 
@@ -24,6 +36,7 @@ export type Track = {
   name?: string;
   cssClass?: string;
   isReference?: boolean;
+  options?: Object
 }
 
 export type VisualizedTrack = {
@@ -32,14 +45,12 @@ export type VisualizedTrack = {
   track: Track;  // for css class and options
 }
 
-/*
-TODO(danvk): kill types/types.js and use this
 export type GenomeRange = {
   contig: string;
   start: number;  // inclusive
   stop: number;  // inclusive
 }
-*/
+
 export type PartialGenomeRange = {
   contig?: string;
   start?: number;
