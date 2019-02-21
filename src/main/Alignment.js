@@ -3,7 +3,7 @@
  * @flow
  */
 'use strict';
- 
+
 import type {GenomeRange} from './types';
 import type ContigInterval from './ContigInterval';
 
@@ -22,13 +22,12 @@ function strToStrand(str: string): Strand {
 }
 
 export type Strand = '-' | '+' | '.';
-export type Orientation = 'r' | 'f' | '.';
 
 export type MateProperties = {
   ref: ?string;
   pos: number;
   strand: Strand;
-  orientation: Orientation;
+  firstOfPair: boolean;
 }
 
 export type Alignment = {
@@ -39,7 +38,7 @@ export type Alignment = {
 
   getKey(): string;
   getStrand(): Strand;
-  getOrientation(): Orientation;
+  getFirstOfPair(): boolean;
   getQualityScores(): number[];
   getSequence(): string;
   getInterval(): ContigInterval<string>;
