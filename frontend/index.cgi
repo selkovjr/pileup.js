@@ -63,7 +63,7 @@ if %*ENV<QUERY_STRING> {
     }
   }
 
-  if not (%arg<coords> or %arg<bam> or %arg<aws> or %arg<order>) { # elaborate!
+  if not (%arg<coords> or %arg<bam>) { # this test needs to be more intelligent
     usage();
   }
 }
@@ -71,38 +71,6 @@ else {
   usage();
 }
 
-#}}}
-
-# order/run attributes {{{1
-my $bucket = %*ENV<DEFAULT_AWS_BUCKET>;
-if %arg<bucket> {
-  $bucket = %arg<bucket>;
-}
-
-my $panel = 'xO';
-if %arg<panel> {
-  $panel = %arg<panel>;
-}
-
-my $type = 'TN';
-if %arg<type> {
-  $type = %arg<type>;
-}
-
-my $rel = 'M';
-if %arg<rel> {
-  $rel = %arg<rel>;
-}
-
-my $product = 'R';
-if %arg<product> {
-  $product = %arg<product>;
-}
-
-my $sample = 'T';
-if %arg<sample> {
-  $sample = %arg<sample>;
-}
 #}}}
 
 my $coords = %arg<coords>;
@@ -147,6 +115,11 @@ if (%arg<qual> or %arg<quality>) {
   $qual = True;
 }
 
+my $collapse = '';
+if (%arg<collapse> or %arg<collapse>) {
+  $collapse = True;
+}
+
 my $select = '';
 if (%arg<select>) {
   $select = %arg<select>;
@@ -161,6 +134,7 @@ if ($range ~~ /'-'/) {
 else {
   ($start, $stop) = ($range - 40, $range + 40);
 }
+$contig ~~ s/^ (\d\d? | X | Y | MT?) $/chr$0/;
 
 sub get_url {
   my $url = 'http';
@@ -174,13 +148,13 @@ sub get_url {
 
 my %template_data =
   url => get_url(),
-  panel => $panel,
   ref => $ref,
   downsample => $downsample,
   filter => $filter,
   pairs => $pairs,
   chr => $chr,
   qual => $qual,
+  collapse => $collapse,
   select => $select,
   coords => $coords,
   contig => $contig,
@@ -210,24 +184,9 @@ if %arg<bam> {
   %template_data<local> = True;
   %template_data<bam> = %arg<bam>;
 }
-elsif %arg<aws> {
-  %template_data<aws_path> = True;
-  %template_data<bucket> = $bucket;
-  %template_data<aws> = %arg<aws>;
-}
-elsif %arg<order> {
-  %template_data<aws_detail> = True;
-  %template_data<bucket> = $bucket;
-  %template_data<order> = %arg<order>;
-  %template_data<run> = %arg<run>;
-  %template_data<type> = $type;
-  %template_data<rel> = $rel;
-  %template_data<product> = $product;
-  %template_data<sample> = $sample;
-}
 else {
   say "Status: 201 Backend Error\n";
-  say 'incorrect URL arguments';
+  say 'Missing BAM parameter';
   print Dump(%arg);
   note color('yellow'), Dump(%arg), color('reset');
   exit;
