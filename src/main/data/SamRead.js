@@ -14,7 +14,6 @@
  */
 'use strict';
 
-//import type VirtualOffset from './VirtualOffset';
 import VirtualOffset from './VirtualOffset';
 import type {Strand, CigarOp, MateProperties} from '../Alignment';
 
@@ -36,6 +35,10 @@ var uoffset = 0;
 
 function strandFlagToString(reverseStrand: number): Strand {
   return reverseStrand ? '-' : '+';
+}
+
+function firstOfPairFlagToString(firstOfPair: number): Orientation {
+  return firstOfPair ? 'f' : 'r';
 }
 
 
@@ -89,8 +92,10 @@ class SamRead /* implements Alignment */ {
     else {
       var f = buffer.split('\t');
       var refID = pileup.contigIndex[f[2]];
+      var md = f[17] ? f[17].split(':')[2] : null;
       Object.assign(this, {
         flag: parseInt(f[1], 10),
+        md: md,
         ref: f[2],
         refID: refID,
         name: f[0],
@@ -154,6 +159,10 @@ class SamRead /* implements Alignment */ {
 
   getStrand(): Strand {
     return strandFlagToString(this.getFlag() & bamTypes.Flags.READ_STRAND);
+  }
+
+  getOrientation(): Orientation {
+    return firstOfPairFlagToString(this.getFlag() & bamTypes.Flags.FIRST_OF_PAIR);
   }
 
   // TODO: get rid of this; move all methods into SamRead.
