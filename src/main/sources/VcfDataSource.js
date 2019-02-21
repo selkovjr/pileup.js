@@ -5,20 +5,25 @@
  */
 'use strict';
 
-import type {Variant} from '../data/vcf';
 
 import Events from 'backbone';
 import _ from 'underscore';
 import Q from 'q';
-
+import type {GenomeRange} from '../types';
 import ContigInterval from '../ContigInterval';
 import RemoteFile from '../RemoteFile';
 import LocalStringFile from '../LocalStringFile';
-import VcfFile from '../data/vcf';
+// requirement for jshint to pass
+/* exported Variant */
+import {Variant, VariantContext} from '../data/variant';
+import {VcfFile} from '../data/vcf';
+
 
 export type VcfDataSource = {
   rangeChanged: (newRange: GenomeRange) => void;
-  getFeaturesInRange: (range: ContigInterval<string>) => Variant[];
+  getVariantsInRange: (range: ContigInterval<string>) => Variant[];
+  getGenotypesInRange: (range: ContigInterval<string>) => VariantContext[];
+  getSamples: () => Q.Promise<string[]>;
   on: (event: string, handler: Function) => void;
   off: (event: string) => void;
   trigger: (event: string, ...args:any) => void;
@@ -26,27 +31,21 @@ export type VcfDataSource = {
 
 
 var BASE_PAIRS_PER_FETCH = 100;
-function expandRange(range: ContigInterval<string>) {
-  var roundDown = x => x - x % BASE_PAIRS_PER_FETCH;
-  var newStart = Math.max(1, roundDown(range.start())),
-      newStop = roundDown(range.stop() + BASE_PAIRS_PER_FETCH - 1);
+var ZERO_BASED = false;
 
-  return new ContigInterval(range.contig, newStart, newStop);
-}
-
-function variantKey(v: Variant): string {
-  return `${v.contig}:${v.position}:${v.ref}:${v.alt}:${v.filter}`;
+function variantContextKey(v: VariantContext): string {
+  return `${v.variant.contig}:${v.variant.position}`;
 }
 
 
 function createFromVcfFile(remoteSource: VcfFile): VcfDataSource {
-  var variants: {[key: string]: Variant} = {};
+  var variants: {[key: string]: VariantContext} = {};
 
   // Ranges for which we have complete information -- no need to hit network.
   var coveredRanges: ContigInterval<string>[] = [];
 
-  function addVariant(v: Variant) {
-    var key = variantKey(v);
+  function addVariantContext(v: VariantContext) {
+    var key = variantContextKey(v);
     if (!variants[key]) {
       variants[key] = v;
     }
@@ -60,32 +59,45 @@ function createFromVcfFile(remoteSource: VcfFile): VcfDataSource {
       return Q.when();
     }
 
-    interval = expandRange(interval);
+    interval = interval.round(BASE_PAIRS_PER_FETCH, ZERO_BASED);
 
     // "Cover" the range immediately to prevent duplicate fetches.
     coveredRanges.push(interval);
     coveredRanges = ContigInterval.coalesce(coveredRanges);
     return remoteSource.getFeaturesInRange(interval).then(variants => {
-      variants.forEach(variant => addVariant(variant));
+      variants.forEach(variant => addVariantContext(variant));
       o.trigger('newdata', interval);
     });
   }
 
-  function getFeaturesInRange(range: ContigInterval<string>): Variant[] {
+  function getVariantsInRange(range: ContigInterval<string>): Variant[] {
     if (!range) return [];  // XXX why would this happen?
-    return _.filter(variants, v => range.chrContainsLocus(v.contig, v.position));
+    var filtered = _.filter(variants, v => range.containsLocus(v.variant.contig, v.variant.position));
+    return _.map(filtered, f => f.variant);
+  }
+
+  function getGenotypesInRange(range: ContigInterval<string>): VariantContext[] {
+    return _.filter(variants, v => range.containsLocus(v.variant.contig, v.variant.position));
+  }
+
+  function getSamples(): Q.Promise<string[]> {
+    return remoteSource.getSamples().then(samples => {
+      return samples;
+    });
   }
 
   var o = {
     rangeChanged: function(newRange: GenomeRange) {
       fetch(newRange).done();
     },
-    getFeaturesInRange,
+    getVariantsInRange,
+    getGenotypesInRange,
+    getSamples,
 
     // These are here to make Flow happy.
     on: () => {},
     off: () => {},
-    trigger: () => {}
+    trigger: (status: string, param: any) => {}
   };
   _.extend(o, Events);  // Make this an event emitter
 

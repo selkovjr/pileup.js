@@ -1,7 +1,9 @@
 /* @flow */
 'use strict';
 
+import type {GenomeRange} from '../types';
 import type {Strand} from '../Alignment';
+import {strToStrand} from '../Alignment';
 
 import _ from 'underscore';
 import Q from 'q';
@@ -10,11 +12,15 @@ import {Events} from 'backbone';
 import ContigInterval from '../ContigInterval';
 import Interval from '../Interval';
 import BigBed from '../data/BigBed';
+// requirement for jshint to pass
+/* exported Feature */
+import Feature from '../data/feature';
 
 
 export type Gene = {
   position: ContigInterval<string>;
   id: string;  // transcript ID, e.g. "ENST00000269305"
+  score: number;
   strand: Strand;
   codingRegion: Interval;  // locus of coding start
   exons: Array<Interval>;
@@ -23,33 +29,58 @@ export type Gene = {
 }
 
 // Flow type for export.
+export type FeatureDataSource = {
+  rangeChanged: (newRange: GenomeRange) => void;
+  getFeaturesInRange: (range: ContigInterval<string>, resolution: ?number) => Feature[];
+  on: (event: string, handler: Function) => void;
+  off: (event: string) => void;
+  trigger: (event: string, ...args:any) => void;
+}
+
+// Flow type for export.
 export type BigBedSource = {
   rangeChanged: (newRange: GenomeRange) => void;
-  getGenesInRange: (range: ContigInterval<string>) => Gene[];
+  getFeaturesInRange: (range: ContigInterval<string>) => Gene[];
   on: (event: string, handler: Function) => void;
   off: (event: string) => void;
   trigger: (event: string, ...args:any) => void;
 }
 
 // The fields are described at http://genome.ucsc.edu/FAQ/FAQformat#format1
+// Fields 4-12 are optional
 function parseBedFeature(f): Gene {
   var position = new ContigInterval(f.contig, f.start, f.stop),
-      x = f.rest.split('\t'),
-      // exons arrays sometimes have trailing commas
-      exonLengths = x[7].replace(/,*$/, '').split(',').map(Number),
-      exonStarts = x[8].replace(/,*$/, '').split(',').map(Number),
-      exons = _.zip(exonStarts, exonLengths)
-               .map(function([start, length]) {
-                 return new Interval(f.start + start, f.start + start + length);
-               });
+      x = f.rest.split('\t');
+
+  // if no id, generate randomly for unique storage
+  var id = x[0] ? x[0] : position.toString(); // e.g. ENST00000359597
+  var score = x[1] ? parseInt(x[1]) : 1000; // number from 0-1000
+  var strand =  strToStrand(x[2]); // either +, - or .
+  var codingRegion = (x[3] && x[4]) ? new Interval(Number(x[3]), Number(x[4])) :new Interval(f.start, f.stop);
+  var geneId =  x[9] ? x[9] : id;
+  var name =  x[10] ? x[10] : "";
+
+  // parse exons
+  var exons = [];
+  if (x[7] && x[8]) {
+    // exons arrays sometimes have trailing commas
+    var exonLengths = x[7].replace(/,*$/, '').split(',').map(Number),
+      exonStarts = x[8].replace(/,*$/, '').split(',').map(Number);
+
+    exons = _.zip(exonStarts, exonLengths)
+             .map(function([start, length]) {
+               return new Interval(f.start + start, f.start + start + length);
+             });
+  }
 
   return {
     position,
-    id: x[0],  // e.g. ENST00000359597
-    strand: x[2],  // either + or -
-    codingRegion: new Interval(Number(x[3]), Number(x[4])),
-    geneId: x[9],
-    name: x[10],
+    id: id,
+    score: score,
+    strand: strand,
+    codingRegion: codingRegion,
+    geneId: geneId,
+    name: name,
     exons
   };
 }
@@ -68,7 +99,7 @@ function createFromBigBedFile(remoteSource: BigBed): BigBedSource {
     }
   }
 
-  function getGenesInRange(range: ContigInterval<string>): Gene[] {
+  function getFeaturesInRange(range: ContigInterval<string>): Gene[] {
     if (!range) return [];
     var results = [];
     _.each(genes, gene => {
@@ -96,9 +127,10 @@ function createFromBigBedFile(remoteSource: BigBed): BigBedSource {
         coveredRanges = ContigInterval.coalesce(coveredRanges);
         var genes = fb.rows.map(parseBedFeature);
         genes.forEach(gene => addGene(gene));
-        //we have new data from our internal block range
-        o.trigger('newdata', fb.range);
       });
+      //we have new data from our internal block range
+      o.trigger('newdata', interval);
+      o.trigger('networkdone');
     });
   }
 
@@ -106,12 +138,12 @@ function createFromBigBedFile(remoteSource: BigBed): BigBedSource {
     rangeChanged: function(newRange: GenomeRange) {
       fetch(newRange).done();
     },
-    getGenesInRange,
+    getFeaturesInRange,
 
     // These are here to make Flow happy.
     on: () => {},
     off: () => {},
-    trigger: () => {}
+    trigger: (status: string, param: any) => {}
   };
   _.extend(o, Events);  // Make this an event emitter
 
