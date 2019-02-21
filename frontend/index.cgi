@@ -181,7 +181,6 @@ if %arg<message> {
   %template_data<message> = %arg<message>;
 }
 if %arg<bam> {
-  %template_data<local> = True;
   %template_data<bam> = %arg<bam>;
 }
 else {

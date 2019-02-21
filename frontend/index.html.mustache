@@ -49,15 +49,7 @@
 
   // We are going to use the same data source for multiple tracks
   var readSource = pileup.formats.reads({
-{{#local}}
-    url: '/backend/reads.cgi?{{downsample}}{{filter}}{{chr}}coords=<range>;bam={{bam}}'
-{{/local}}
-{{#aws_path}}
-    url: '/backend/reads.cgi?{{downsample}}{{filter}}{{chr}}coords=<range>;bucket={{bucket}};aws={{aws}}'
-{{/aws_path}}
-{{#aws_detail}}
-    url: '/backend/reads.cgi?{{downsample}}{{filter}}{{chr}}coords=<range>;bucket={{bucket}};panel={{panel}};order={{order}};run={{run}};type={{type}};rel={{rel}};product={{product}};sample={{sample}}'
-{{/aws_detail}}
+    url: '/backend/reads.cgi?{{downsample}}{{filter}}{{chr}}coords=<range>;bam={{bam}};ref={{ref}}'
   });
 
   var range = {contig: '{{contig}}', start: {{start}}, stop: {{stop}}};
@@ -103,7 +95,12 @@
       panel = 'xO';
     }
     else if (bam.match(/_xT/)) {
-      panel = 'xT';
+      if (bam.match(/_xT\.v2/)) {
+        panel = 'xT.v2';
+      }
+      else {
+        panel = 'xT';
+      }
     }
 
     console.log(assembly, panel);
@@ -114,7 +111,7 @@
           viz: pileup.viz.genes(),
           data: pileup.formats.bigBed({
             // url: 'https://www.biodalliance.org/datasets/GRCh37/gencode.v19.basic.bb'
-            url: '/web/data/gencode.v19.basic.bb'
+            url: '/data/genes/hg19/refseq.genes.{{contig}}.bb'
           }),
           name: 'gene'
         }
@@ -126,7 +123,7 @@
           viz: pileup.viz.genes(),
           data: pileup.formats.bigBed({
             // url: 'https://www.biodalliance.org/datasets/GRCh37/gencode.v19.basic.bb'
-            url: '/data/genes/refseq.genes.{{contig}}.bb'
+            url: '/data/genes/hg38/refseq.genes.{{contig}}.bb'
           }),
           name: 'gene'
         }
@@ -135,13 +132,6 @@
 
     if (panel === 'xO') {
       sources.push (
-        {
-          viz: pileup.viz.regions(),
-          data: pileup.formats.bigBedRegion({
-            url: '/data/exonic-targets.bb'
-          }),
-          name: 'exon'
-        },
         {
           viz: pileup.viz.regions(),
           data: pileup.formats.bigBedRegion({
@@ -175,38 +165,38 @@
           name: 'xO probes'
         }
       );
-    {{#blacklist}}
-      sources.push (
-        {
-          viz: pileup.viz.regions(),
-          data: pileup.formats.bigBedRegion({
-            url: '/data/mask.bb'
-          }),
-          name: 'RepeatMasker'
-        },
-        {
-          viz: pileup.viz.regions(),
-          data: pileup.formats.bigBedRegion({
-            url: '/data/repeats.bb'
-          }),
-          name: 'repeats'
-        },
-        {
-          viz: pileup.viz.regions(),
-          data: pileup.formats.bigBedRegion({
-            url: '/data/xt-merged.bb'
-          }),
-          name: 'BL region'
-        },
-        {
-          viz: pileup.viz.blacklist(),
-          data: pileup.formats.vcf({
-            url: '/data/blacklist-xo-manual.vcf'
-          }),
-          name: 'blacklisted'
-        }
-      );
-    {{/blacklist}}
+    // {.{#blacklist}}
+    //   sources.push (
+    //     {
+    //       viz: pileup.viz.regions(),
+    //       data: pileup.formats.bigBedRegion({
+    //         url: '/data/mask.bb'
+    //       }),
+    //       name: 'RepeatMasker'
+    //     },
+    //     {
+    //       viz: pileup.viz.regions(),
+    //       data: pileup.formats.bigBedRegion({
+    //         url: '/data/repeats.bb'
+    //       }),
+    //       name: 'repeats'
+    //     },
+    //     {
+    //       viz: pileup.viz.regions(),
+    //       data: pileup.formats.bigBedRegion({
+    //         url: '/data/xt-merged.bb'
+    //       }),
+    //       name: 'BL region'
+    //     },
+    //     {
+    //       viz: pileup.viz.blacklist(),
+    //       data: pileup.formats.vcf({
+    //         url: '/data/blacklist-xo-manual.vcf'
+    //       }),
+    //       name: 'blacklisted'
+    //     }
+    //   );
+    // {.{/blacklist}}
     }
 
     else if (panel === 'xT') {
@@ -214,10 +204,112 @@
         {
           viz: pileup.viz.regions(),
           data: pileup.formats.bigBedRegion({
-            url: '/data/exonic-targets.bb'
+            url: '/data/xt-pseudogene-homology.bb'
           }),
-          name: 'exon'
+          name: 'pseudogene'
         },
+
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/xt-targets.bb'
+          }),
+          name: 'xT probes'
+        },
+//         {
+//           viz: pileup.viz.regions(),
+//           data: pileup.formats.bigBedRegion({
+//             url: '/data/repeats.bb'
+//           }),
+//           name: 'Repeat'
+//         },
+      );
+    // {.{#blacklist}}
+    //   sources.push (
+    //     {
+    //       viz: pileup.viz.regions(),
+    //       data: pileup.formats.bigBedRegion({
+    //         url: '/data/mask.bb'
+    //       }),
+    //       name: 'RepeatMasker'
+    //     },
+    //     {
+    //       viz: pileup.viz.regions(),
+    //       data: pileup.formats.bigBedRegion({
+    //         url: '/data/repeats.bb'
+    //       }),
+    //       name: 'repeats'
+    //     },
+    //     {
+    //       viz: pileup.viz.regions(),
+    //       data: pileup.formats.bigBedRegion({
+    //         url: '/data/xt-merged.bb'
+    //       }),
+    //       name: 'BL region'
+    //     },
+    //     {
+    //       viz: pileup.viz.blacklist(),
+    //       data: pileup.formats.vcf({
+    //         url: '/data/combined.vcf'
+    //       }),
+    //       name: 'blacklisted'
+    //     }
+    //   );
+    // {.{/blacklist}}
+    }
+
+    else if (panel === 'xT.v2') {
+      sources.push (
+        // {
+        //   viz: pileup.viz.regions(),
+        //   data: pileup.formats.bigBedRegion({
+        //     url: '/data/xt-pseudogene-homology.bb'
+        //   }),
+        //   name: 'pseudogene'
+        // },
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/xt.v2-targets.bb'
+          }),
+          name: 'xT.v2 probes'
+        },
+        // {
+        //   viz: pileup.viz.regions(),
+        //   data: pileup.formats.bigBedRegion({
+        //     url: '/data/repeat-masker-hg19.bb'
+        //   }),
+        //   name: 'RepeatMasker'
+        // },
+        // {
+        //   viz: pileup.viz.regions(),
+        //   data: pileup.formats.bigBedRegion({
+        //     url: '/data/repeats.bb'
+        //   }),
+        //   name: 'Repeat'
+        // },
+        {
+          viz: pileup.viz.regions(),
+          data: pileup.formats.bigBedRegion({
+            url: '/data/repeats/hg19/repeat-masker.chr3.bb'
+          }),
+          name: 'Repeat'
+        },
+        // {
+        //   viz: pileup.viz.features(),
+        //   data: pileup.formats.bigBed({
+        //     // url: '/data/repeats.bb'
+        //     // url: '/data/chr17.22.10000-21000.bb',
+        //     // url: '/data/repeat-masker-hg19.bb'
+        //     url: '/data/repeats/hg19/repeat-masker.chr3.bb'
+        //   }),
+        //   name: 'Features'
+        // }
+      );
+    }
+
+    else if (panel === 'xF') {
+      sources.push (
         {
           viz: pileup.viz.regions(),
           data: pileup.formats.bigBedRegion({
@@ -228,50 +320,11 @@
         {
           viz: pileup.viz.regions(),
           data: pileup.formats.bigBedRegion({
-            url: '/data/xt-primary-targets.bb'
+            url: '/data/xf-targets.bb'
           }),
-          name: 'xT primary'
-        },
-        {
-          viz: pileup.viz.regions(),
-          data: pileup.formats.bigBedRegion({
-            url: '/data/xt-regions.bb'
-          }),
-          name: 'xT probes'
+          name: 'xF probes'
         }
       );
-    {{#blacklist}}
-      sources.push (
-        {
-          viz: pileup.viz.regions(),
-          data: pileup.formats.bigBedRegion({
-            url: '/data/mask.bb'
-          }),
-          name: 'RepeatMasker'
-        },
-        {
-          viz: pileup.viz.regions(),
-          data: pileup.formats.bigBedRegion({
-            url: '/data/repeats.bb'
-          }),
-          name: 'repeats'
-        },
-        {
-          viz: pileup.viz.regions(),
-          data: pileup.formats.bigBedRegion({
-            url: '/data/xt-merged.bb'
-          }),
-          name: 'BL region'
-        },
-        {
-          viz: pileup.viz.blacklist(),
-          data: pileup.formats.vcf({
-            url: '/data/combined.vcf'
-          }),
-          name: 'blacklisted'
-        }
-      );
-    {{/blacklist}}
     }
 
     // else { // assume exome
@@ -337,6 +390,11 @@
 {{#pairs}}
     g_pileup_gui.viewAsPairs = true;
 {{/pairs}}
+
+    g_pileup_gui.collapse = null;
+{{#collapse}}
+    g_pileup_gui.collapse = true;
+{{/collapse}}
 
     g_pileup_gui.qual = null;
 {{#qual}}
