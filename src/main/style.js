@@ -15,7 +15,7 @@ module.exports = {
     'C': '#0600F9',
     'T': '#ff0015',
     'U': '#F70016',
-    'N': 'black'
+    'N': '#a0o0o0'
   },
 
   // Styles for base pairs which are rendered as letters
@@ -32,14 +32,24 @@ module.exports = {
 
   // Pileup track
   ALIGNMENT_COLOR: '#c8c8c8',
-  //ALIGNMENT_MINUS_STRAND_COLOR: 'rgb(176, 176, 236)',
-  //ALIGNMENT_MINUS_STRAND_COLOR: 'rgb(207, 204, 243)',
-  ALIGNMENT_MINUS_STRAND_COLOR: 'rgb(124, 122, 243)',
-  //ALIGNMENT_PLUS_STRAND_COLOR: 'rgb(236, 176, 176)',
-  //ALIGNMENT_PLUS_STRAND_COLOR: 'rgb(241, 212, 214)',
-  ALIGNMENT_PLUS_STRAND_COLOR: 'rgb(241, 127, 128)',
+  ALIGNMENT_PLUS_STRAND_COLOR: '#DD989B',
+  ALIGNMENT_MINUS_STRAND_COLOR: '#b0b0ec',
+  READ_COLOR: {
+    F1F2: '#911C22',
+    F1R2: {
+      R1: '#DD989B',
+      R2: '#b0b0ec',
+    },
+    R1F2: {
+      R1: '#e4c490',
+      R2: '#79B2A4',
+    },
+  },
   DELETE_COLOR: 'black',
-  INSERT_COLOR: 'rgb(97, 0, 216)',
+  INSERT_COLOR: '#6100d8',
+  READ_SPACING: 1, // vertical spacing between reads
+  READ_HEIGHT: 11, // Height of read
+
 
   // Coverage track
   COVERAGE_FONT_STYLE: `bold 9px 'Helvetica Neue', Helvetica, Arial, sans-serif`,
@@ -68,6 +78,12 @@ module.exports = {
   VARIANT_STROKE: '#666',
   VARIANT_FILL: '#ddd',
   VARIANT_HEIGHT: 14,
+
+ // Genotype Track
+  GENOTYPE_SPACING: 1,
+  GENOTYPE_HEIGHT: 10,
+  GENOTYPE_FILL: '#999999',
+  BACKGROUND_FILL: '#f2f2f2',
 
   // Blacklist Track
   BLACKLIST_TEXT_COLOR: 'black'

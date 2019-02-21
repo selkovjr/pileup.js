@@ -31,7 +31,7 @@ import dataCanvas from 'data-canvas';
 import style from '../style';
 
 
-var READ_HEIGHT = 15;
+var READ_HEIGHT = 9;
 var READ_SPACING = 1;  // vertical pixels between reads
 
 var READ_STRAND_ARROW_WIDTH = 5;
@@ -72,7 +72,7 @@ class PileupTiledCanvas extends TiledCanvas {
         new ContigInterval(range.contig, range.start() - 1, range.stop() + 1);
     var vGroups = this.cache.getGroupsOverlapping(relaxedRange);
     var insertStats = this.options.colorByInsert ? this.cache.getInsertStats() : null;
-    renderPileup(ctx, scale, relaxedRange, insertStats, this.options.colorByStrand, this.options.showQuality, vGroups);
+    renderPileup(ctx, scale, relaxedRange, insertStats, this.options.colorByStrand, this.options.showQuality, this.options.collapse, vGroups);
   }
 }
 
@@ -91,6 +91,7 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
                       insertStats: ?InsertStats,
                       colorByStrand: boolean,
                       showQuality: boolean,
+                      collapse: boolean,
                       vGroups: VisualGroup[]) {
   // Should mismatched base pairs be shown as blocks of color or as letters?
   var pxPerLetter = scale(1) - scale(0),
@@ -222,16 +223,26 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
   function drawAlignment(vRead: VisualAlignment, y: number) {
     ctx.pushObject(vRead);
     ctx.save();
+    ctx.fillStyle = null;
     if (colorByStrand) {
-      if (SELECTED_READ && vRead.read.name === SELECTED_READ.read.name) {
-        ctx.fillStyle = vRead.strand == '+' ?
-          d3.rgb(style.ALIGNMENT_PLUS_STRAND_COLOR).darker(0.3).toString() :
-          d3.rgb(style.ALIGNMENT_MINUS_STRAND_COLOR).darker(0.3).toString();
+      if (vRead.firstOfPair) {
+        if (vRead.strand == '+') {
+          ctx.fillStyle = style.READ_COLOR.F1R2.R1; // #DD989B
+        }
+        else {
+          ctx.fillStyle = style.READ_COLOR.R1F2.R1; // #e4c490
+        }
       }
       else {
-        ctx.fillStyle = vRead.strand == '+' ?
-          style.ALIGNMENT_PLUS_STRAND_COLOR :
-          style.ALIGNMENT_MINUS_STRAND_COLOR;
+        if (vRead.strand == '+') {
+          ctx.fillStyle = style.READ_COLOR.R1F2.R2; // #79B2A4
+        }
+        else {
+          ctx.fillStyle = style.READ_COLOR.F1R2.R2; // #b0b0ec
+        }
+      }
+      if (SELECTED_READ && vRead.read.name === SELECTED_READ.read.name) {
+        ctx.fillStyle = d3.rgb(ctx.fillStyle).darker().toString();
       }
     }
     vRead.ops.forEach(op => {
@@ -245,6 +256,28 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
   }
 
   function drawGroup(vGroup: VisualGroup) {
+    if (
+      collapse
+      && vGroup.alignments.length === 1
+      && vGroup.alignments[0].mismatches.length === 0
+      && !vGroup.alignments[0].deletions
+      && !vGroup.alignments[0].insertions
+    ) {
+      return;
+    }
+    if (
+      collapse
+      && vGroup.alignments.length === 2
+      && vGroup.alignments[0].mismatches.length === 0
+      && vGroup.alignments[1].mismatches.length === 0
+      && !vGroup.alignments[0].deletions
+      && !vGroup.alignments[0].insertions
+      && !vGroup.alignments[1].deletions
+      && !vGroup.alignments[1].insertions
+    ) {
+      return;
+    }
+
     ctx.save();
     if (insertStats && vGroup.insert) {
       var len = vGroup.span.length();
@@ -337,7 +370,7 @@ class PileupTrack extends React.Component {
   state: State;
   cache: PileupCache;
   tiles: PileupTiledCanvas;
-  static defaultOptions: { viewAsPairs: boolean, showQuality: boolean };
+  static defaultOptions: { viewAsPairs: boolean, showQuality: boolean, collapse: boolean };
   static getOptionsMenu: (options: Object) => any;
   static handleSelectOption: (key: string, oldOptions: Object) => Object;
 
@@ -417,6 +450,7 @@ class PileupTrack extends React.Component {
 
   componentDidMount() {
     this.props.options.showQuality = g_pileup_gui.showQuality;
+    this.props.options.collapse = g_pileup_gui.collapse;
 
     this.props.options.viewAsPairs = g_pileup_gui.viewAsPairs;
     this.cache = new PileupCache(this.props.referenceSource, this.props.options.viewAsPairs);
@@ -717,7 +751,7 @@ class PileupTrack extends React.Component {
         // closer to the click coordinate, rather than the whole visible range.
         vGroups = this.cache.getGroupsOverlapping(range);
 
-    renderPileup(trackingCtx, scale, range, null, false, false, vGroups);
+    renderPileup(trackingCtx, scale, range, null, false, false, false, vGroups);
     var vRead = _.find(trackingCtx.hits[0], hit => hit.read);
     var alert = window.alert || console.log;
     if (vRead) {
@@ -768,6 +802,7 @@ PileupTrack.displayName = 'pileup';
 PileupTrack.defaultOptions = {
   viewAsPairs: false,
   showQuality: false,
+  collapse: false,
   colorByInsert: false,
   colorByStrand: true
 };
