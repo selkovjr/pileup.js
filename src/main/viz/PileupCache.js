@@ -22,6 +22,7 @@ import utils from '../utils';
 export type VisualAlignment = {
   read: Alignment;
   strand: Strand;
+  firstOfPair: boolean;
   refLength: number;  // span on the reference (accounting for indels)
   mismatches: Array<BasePair>;
   ops: Object[];
@@ -101,6 +102,7 @@ class PileupCache {
     var visualAlignment = {
       read,
       strand: read.getStrand(),
+      firstOfPair: read.getFirstOfPair(),
       refLength: range.length(),
       ops: opInfo.ops,
       mismatches: opInfo.mismatches
@@ -143,13 +145,13 @@ class PileupCache {
     }
   }
 
-  // Updates reference mismatch information for previously-loaded reads.
+  // Updates reference mismatch information for previously loaded reads.
   updateMismatches(range: ContigInterval<string>) {
     for (var k in this.groups) {
       var reads = this.groups[k].alignments;
       for (var vRead of reads) {
         var read = vRead.read;
-        if (read.getInterval().chrIntersects(range)) {
+        if (read.getInterval().intersects(range)) {
           var opInfo = getOpInfo(read, this.referenceSource);
           vRead.mismatches = opInfo.mismatches;
         }
@@ -180,7 +182,7 @@ class PileupCache {
   // Find groups overlapping the range. This is 'chr'-agnostic.
   getGroupsOverlapping(range: ContigInterval<string>): VisualGroup[] {
     // TODO: speed this up using an interval tree
-    return _.filter(this.groups, group => group.span.chrIntersects(range));
+    return _.filter(this.groups, group => group.span.intersects(range));
   }
 
   // Determine the number of groups at a locus.
@@ -188,7 +190,7 @@ class PileupCache {
   anyGroupsOverlapping(range: ContigInterval<string>): boolean {
     for (var k in this.groups) {
       var group = this.groups[k];
-      if (group.span.chrIntersects(range)) {
+      if (group.span.intersects(range)) {
         return true;
       }
     }
@@ -207,7 +209,7 @@ class PileupCache {
     // Find the groups for which an alignment overlaps the locus.
     var groups = _.filter(this.groups,
           group => _.any(group.alignments,
-              a => a.read.getInterval().chrContainsLocus(contig, position)));
+              a => a.read.getInterval().containsLocus(contig, position)));
 
     // For each row, find the left-most point (for sorting).
     var rowsOverlapping =
