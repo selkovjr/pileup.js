@@ -4,6 +4,7 @@
  */
 'use strict';
 
+import type {GenomeRange} from './types';
 import type {TwoBitSource} from './sources/TwoBitDataSource';
 import type {VisualizedTrack, VizWithOptions} from './types';
 
@@ -18,21 +19,27 @@ type Props = {
   initialRange: GenomeRange;
 };
 
-class Root extends React.Component {
+type State = {
+  contigList: string[];
+  range: ?GenomeRange;
+  settingsMenuKey: ?string;
+  updateSize: boolean;
+};
+
+class Root extends React.Component<Props, State> {
   props: Props;
-  state: {
-    contigList: string[];
-    range: ?GenomeRange;
-    settingsMenuKey: ?string;
-  };
+  state: State;
+  trackReactElements: Array<Object>; //it's an array of reactelement that are created for tracks
 
   constructor(props: Object) {
     super(props);
     this.state = {
       contigList: this.props.referenceSource.contigList(),
       range: null,
+      updateSize: false,
       settingsMenuKey: null
     };
+    this.trackReactElements = [];
   }
 
   componentDidMount() {
@@ -64,7 +71,7 @@ class Root extends React.Component {
     }).done();
   }
 
-  toggleSettingsMenu(key: string, e: SyntheticEvent) {
+  toggleSettingsMenu(key: string, e: SyntheticEvent<>) {
     if (this.state.settingsMenuKey == key) {
       this.setState({settingsMenuKey: null});
     } else {
@@ -74,9 +81,9 @@ class Root extends React.Component {
 
   handleSelectOption(trackKey: string, optionKey: string) {
     this.setState({settingsMenuKey: null});
-
     var viz = this.props.tracks[Number(trackKey)].visualization;
     var oldOpts = viz.options;
+    // $FlowIgnore: TODO remove flow suppression
     var newOpts = viz.component.handleSelectOption(optionKey, oldOpts);
     viz.options = newOpts;
     if (newOpts != oldOpts) {
@@ -84,19 +91,25 @@ class Root extends React.Component {
     }
   }
 
-  makeDivForTrack(key: string, track: VisualizedTrack): React.Element {
+  makeDivForTrack(key: string, track: VisualizedTrack): React$Element<'div'> {
+    //this should be improved, but I have no idea how (when trying to
+    //access this.trackReactElements with string key, flow complains)
+    var intKey = parseInt(key); 
     var trackEl = (
         <VisualizationWrapper visualization={track.visualization}
             range={this.state.range}
             onRangeChange={this.handleRangeChange.bind(this)}
             source={track.source}
+            options={track.track.options}
             referenceSource={this.props.referenceSource}
+            ref = {(c: React$ElementRef<Object>) => {this.trackReactElements[intKey]=c}}
           />);
 
     var trackName = track.track.name || '(track name)';
 
     var gearIcon = null,
         settingsMenu = null;
+    // $FlowIgnore: TODO remove flow suppression
     if (track.visualization.component.getOptionsMenu) {
       gearIcon = (
           <span ref={'gear-' + key}
@@ -118,6 +131,7 @@ class Root extends React.Component {
         left: (gearX + gearW) + 'px',
         top: gearY + 'px'
       };
+      // $FlowIgnore: TODO remove flow suppression
       var items = track.visualization.component.getOptionsMenu(track.visualization.options);
       settingsMenu = (
         <div className='menu-container' style={menuStyle}>
@@ -162,6 +176,16 @@ class Root extends React.Component {
       </div>
     );
   }
+
+  componentDidUpdate(prevProps: Props, prevState: Object) {
+    if (this.state.updateSize) {
+      for (var i=0;i<this.props.tracks.length;i++) {
+        this.trackReactElements[i].setState({updateSize:this.state.updateSize});
+      }
+      this.state.updateSize=false;
+    }
+  }
+
 }
 Root.displayName = 'Root';
 
