@@ -83,7 +83,7 @@ class TiledCanvas {
       tilesAtRes = tilesAtRes.concat(this.makeNewTiles(existingIntervals, pixelsPerBase, range));
     }
 
-    var tiles = tilesAtRes.filter(tile => range.chrIntersects(tile.range));
+    var tiles = tilesAtRes.filter(tile => range.intersects(tile.range));
 
     tiles.forEach(tile => {
       var left = Math.round(scale(tile.range.start())),
@@ -95,7 +95,7 @@ class TiledCanvas {
       // rounding issues, which can result in 1px gaps or overdrawing.
       // We always have:
       //   width - tile.buffer.width \in {-1, 0, +1}
-      ctx.drawImage(tile.buffer, 
+      ctx.drawImage(tile.buffer,
                     0, 0, tile.buffer.width, tile.buffer.height,
                     left, 0, width, tile.buffer.height);
 
@@ -113,8 +113,8 @@ class TiledCanvas {
     this.tileCache = [];
   }
 
-  invalidateRange(range: ContigInterval) {
-    this.tileCache = this.tileCache.filter(tile => !tile.range.chrIntersects(range));
+  invalidateRange(range: ContigInterval<string>) {
+    this.tileCache = this.tileCache.filter(tile => !tile.range.intersects(range));
   }
 
   heightForRef(ref: string): number {
