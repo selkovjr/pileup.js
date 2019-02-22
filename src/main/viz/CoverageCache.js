@@ -77,7 +77,6 @@ class CoverageCache {
     var
       counts = this.refToCounts[ref],
       max = this.refToMaxCoverage[ref];
-      //  range = read.getInterval(),
 
     for (var segment of read.getSegments(opInfo)) {
       var
@@ -200,6 +199,8 @@ class CoverageCache {
 
       this.refToMaxCoverage[ref] = max;
     }
+
+    this.refToMaxCoverage[ref] = max;
   }
 
   maxCoverageForRef(ref: string): number {
