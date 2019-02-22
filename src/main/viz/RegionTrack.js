@@ -129,7 +129,7 @@ class RegionTrack extends React.Component {
     this.state.regions.forEach(region => {
       var offset;
 
-      if (!region.position.chrIntersects(range)) return;
+      if (!region.position.intersects(range)) return;
 
       count += 1;
       offset = (count % 2) * 2;
