@@ -4,6 +4,18 @@
 import type SamRead from '../data/SamRead';
 import type {Alignment, CigarSymbol} from '../Alignment';
 import type Interval from '../Interval';
+import style from '../style';
+
+/**
+ * Calculate row height for pileup
+ * row: row number
+ * height: height of elements to draw
+ * spacing: spacing between elements to draw
+ * Returns y location for this row
+ */
+function yForRow(row: number, height: number=style.READ_HEIGHT, spacing: number=style.READ_SPACING): number {
+  return (row * (height + spacing));
+}
 
 /**
  * Given a list of Intervals, return a parallel list of row numbers for each.
@@ -148,7 +160,7 @@ function getOpInfo(read: Alignment, referenceSource: Object): OpInfo {
       refPos = start,
       arrowIndex = getArrowIndex(read);
 
-  var result = [];
+  var result: Op[] = [];
   var mismatches = ([]: BasePair[]);
   for (var i = 0; i < ops.length; i++) {
     var op = ops[i];
@@ -167,7 +179,7 @@ function getOpInfo(read: Alignment, referenceSource: Object): OpInfo {
       length: op.length,
       pos: refPos,
       qpos: seqPos,
-      arrow: null
+      arrow: null // direction will be set below
     });
 
     // These are the cigar operations which advance position in the reference
@@ -203,6 +215,7 @@ function getOpInfo(read: Alignment, referenceSource: Object): OpInfo {
 }
 
 module.exports = {
+  yForRow,
   pileup,
   addToPileup,
   getOpInfo,
