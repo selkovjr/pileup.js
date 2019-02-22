@@ -5,7 +5,7 @@ import {expect} from 'chai';
 
 import sinon from 'sinon';
 
-import RemoteRequest from '../main/RemoteRequest';
+import {RemoteRequest} from '../main/RemoteRequest';
 import RemoteFile from '../main/RemoteFile';
 
 describe('RemoteRequest', function() {
@@ -15,14 +15,14 @@ describe('RemoteRequest', function() {
   var start = 10;
   var stop = 20;
 
-  before(function () {
-    return new RemoteFile('/test-data/chr17.1-250.json').getAllString().then(data => {
+  before(function(): any {
+    return new RemoteFile('/test-data/alignments.ga4gh.chr17.1-250.json').getAllString().then(data => {
       response = data;
       server = sinon.fakeServer.create();
     });
   });
 
-  after(function () {
+  after(function() {
     server.restore();
   });
 

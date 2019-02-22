@@ -23,7 +23,6 @@ import ContigInterval from '../../main/ContigInterval';
 import {waitFor} from '../async';
 import dataCanvas from 'data-canvas';
 
-global.g_pileup_gui = {}; // the pileup GUI object
 
 // This is like TwoBit, but allows a controlled release of sequence data.
 class FakeTwoBit extends TwoBit {
@@ -57,7 +56,7 @@ class FakeBam extends Bam {
     this.deferred = Q.defer();
   }
 
-  getAlignmentsInRange(range: ContigInterval<string>, opt_contained?: boolean): Q.Promise<SamRead[]> {
+  getAlignmentsInRange(): Q.Promise<SamRead[]> {
     return this.deferred.promise;
   }
 
@@ -68,7 +67,8 @@ class FakeBam extends Bam {
 
 
 describe('PileupTrack', function() {
-  var testDiv = document.getElementById('testdiv');
+ var testDiv = document.getElementById('testdiv');
+  if (!testDiv) throw new Error("Failed to match: testdiv");
 
   beforeEach(() => {
     // A fixed width container results in predictable x-positions for mismatches.
@@ -90,10 +90,10 @@ describe('PileupTrack', function() {
       bamIndexFile = new RemoteFile('/test-data/synth3.normal.17.7500000-7515000.bam.bai');
 
   // It simplifies the tests to have these variables available synchronously.
-  var reference = '',
+  var reference: string = '',
       alignments = [];
 
-  before(function() {
+  before(function(): any {
     var twoBit = new TwoBit(twoBitFile),
         bam = new Bam(bamFile, bamIndexFile);
     return twoBit.getFeaturesInRange('chr17', 7500000, 7510000).then(seq => {
@@ -135,12 +135,18 @@ describe('PileupTrack', function() {
   var hasReference = () => {
       // The reference initially shows "unknown" base pairs, so we have to
       // check for a specific known one to ensure that it's really loaded.
-      return testDiv.querySelector('.reference canvas') &&
+      return testDiv.querySelector('.reference canvas') !== null &&
+          testDiv.querySelector('.reference canvas') !== undefined &&
           drawnObjectsWith(testDiv, '.reference', x => x.letter).length > 0;
     },
     hasAlignments = () => {
-      return testDiv.querySelector('.pileup canvas') &&
+      return testDiv.querySelector('.pileup canvas') !== null &&
+          testDiv.querySelector('.pileup canvas') !== undefined &&
           drawnObjectsWith(testDiv, '.pileup', x => x.span).length > 0;
+    },
+    hasPileupSelector = () => {
+      return testDiv.querySelector('.pileup canvas') !== null && 
+            testDiv.querySelector('.pileup canvas') !== undefined;  
     },
 
     // Helpers for working with DataCanvas
@@ -162,7 +168,7 @@ describe('PileupTrack', function() {
       expect(mismatchesAtPos(7500764 - 1).length).to.equal(0);
     };
 
-  it('should indicate mismatches when the reference loads first', function() {
+  it('should indicate mismatches when the reference loads first', function(): any {
     var {p, fakeTwoBit, fakeBam} = testSetup();
 
     // Release the reference first.
@@ -183,7 +189,7 @@ describe('PileupTrack', function() {
   });
 
   // Same as the previous test, but with the loads reversed.
-  it('should indicate mismatches when the alignments load first', function() {
+  it('should indicate mismatches when the alignments load first', function(): any {
     var {p, fakeTwoBit, fakeBam} = testSetup();
 
     // Release the alignments first.
@@ -201,7 +207,37 @@ describe('PileupTrack', function() {
     });
   });
 
-  it('should sort reads', function() {
+  it('should hide alignments', function(): any {
+    var p = pileup.create(testDiv, {
+      range: {contig: 'chr17', start: 7500734, stop: 7500796},
+      tracks: [
+        {
+          data: pileup.formats.twoBit({
+            url: '/test-data/test.2bit'
+          }),
+          viz: pileup.viz.genome(),
+          isReference: true
+        },
+        {
+          data: pileup.formats.bam({
+            url: '/test-data/synth3.normal.17.7500000-7515000.bam',
+            indexUrl: '/test-data/synth3.normal.17.7500000-7515000.bam.bai'
+          }),
+          viz: pileup.viz.pileup({
+            hideAlignments: true
+          }),
+        }
+      ]
+    });
+
+    return waitFor(hasPileupSelector, 2000).then(() => {
+      var alignments = drawnObjectsWith(testDiv, '.pileup', x => x.span);
+      expect(alignments.length).to.equal(0);
+      p.destroy();
+    });
+  });
+
+  it('should sort reads', function(): any {
     var p = pileup.create(testDiv, {
       range: {contig: 'chr17', start: 7500734, stop: 7500796},
       tracks: [
