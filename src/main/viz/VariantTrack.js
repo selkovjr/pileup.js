@@ -5,12 +5,13 @@
 'use strict';
 
 import type {VcfDataSource} from '../sources/VcfDataSource';
-import type {Variant} from '../data/vcf';
 import type {DataCanvasRenderingContext2D} from 'data-canvas';
 import type {VizProps} from '../VisualizationWrapper';
 import type {Scale} from './d3utils';
 
 import React from 'react';
+import {number, arrayOf, node} from 'prop-types';
+
 import Portal from 'react-portal';
 import Reactable from 'reactable';
 var Table = Reactable.Table;
@@ -128,6 +129,12 @@ export class BlacklistPopup extends React.Component {
     );
   }
 }
+
+BlacklistPopup.propTypes = {
+  popupTop: number,
+  popupLeft: number,
+  children: arrayOf(node)
+};
 
 class BlacklistTrack extends VariantTrack {
   constructor(props) {
@@ -339,7 +346,7 @@ class BlacklistTrack extends VariantTrack {
           allele: `${v.ref} → ${v.alt}`,
           strand: v.filter,
           threshold: Number.parseFloat(v.qual).toFixed(3)
-        }})
+        }}) // eslint-disable-line semi
       });
     }
     else {

@@ -19,4 +19,4 @@ if [[ $package_version != $code_version ]]; then
 fi
 
 # Run the usual linter
-./node_modules/.bin/eslint src/**/**/*.js
+eslint src/**/**/*.js

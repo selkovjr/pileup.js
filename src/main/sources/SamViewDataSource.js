@@ -11,6 +11,7 @@ import {Events} from 'backbone';
 import ContigInterval from '../ContigInterval';
 import SamRead from '../data/SamRead';
 import type {Alignment, AlignmentDataSource} from '../Alignment';
+import type {GenomeRange} from '../types';
 
 // Genome ranges are rounded to multiples of this for fetching.
 // This reduces network activity while fetching.

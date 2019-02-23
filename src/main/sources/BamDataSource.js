@@ -10,6 +10,7 @@ import BamFile from '../data/bam';
 import RemoteFile from '../RemoteFile';
 
 import type {Alignment, AlignmentDataSource} from '../Alignment';
+import type {GenomeRange} from '../types';
 
 // Genome ranges are rounded to multiples of this for fetching.
 // This reduces network activity while fetching.

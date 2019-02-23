@@ -1,8 +1,6 @@
 /* @flow */
 'use strict';
 
-import type {Strand} from '../Alignment';
-
 import _ from 'underscore';
 import Q from 'q';
 import {Events} from 'backbone';
@@ -10,6 +8,7 @@ import {Events} from 'backbone';
 import ContigInterval from '../ContigInterval';
 import BigBed from '../data/BigBed';
 
+import type {GenomeRange} from '../types';
 
 var transcript_count;
 

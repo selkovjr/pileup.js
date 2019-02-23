@@ -93,6 +93,7 @@ class GeneTrack extends React.Component<VizProps<BigBedSource>, State> {
   }
 
   componentDidMount() {
+    console.log('GeneTrack: global range', range); // eslint-disable-line no-undef
     this.cache = new GenericFeatureCache(this.props.referenceSource);
       // Visualize new reference data as it comes in from the network.
     this.props.source.on('newdata', (range) => {
@@ -111,7 +112,8 @@ class GeneTrack extends React.Component<VizProps<BigBedSource>, State> {
       this.setState({
         networkStatus: null,
         genes: this.props.source.getFeaturesInRange(
-          new ContigInterval(range.contig, range.start, range.stop)
+          // Unlike previous instances of range that are function arguments, this one is global. What sets it?
+          new ContigInterval(range.contig, range.start, range.stop) // eslint-disable-line no-undef
         )
       });
     });

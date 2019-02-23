@@ -6,12 +6,10 @@
  */
 'use strict';
 
-import type {Strand, Alignment, AlignmentDataSource} from '../Alignment';
-import type {TwoBitSource} from '../sources/TwoBitDataSource';
+import type {AlignmentDataSource} from '../Alignment';
 import type {BasePair} from './pileuputils';
 import type {VisualAlignment, VisualGroup, InsertStats} from './PileupCache';
 import type {DataCanvasRenderingContext2D} from 'data-canvas';
-import type Interval from '../Interval';
 import type {VizProps} from '../VisualizationWrapper';
 import type {Scale} from './d3utils';
 
@@ -137,12 +135,12 @@ function renderPileup(ctx: DataCanvasRenderingContext2D,
     function setAlphaAtReadPos (index, vRead) {
       var q = vRead.read._qual.charCodeAt(index) - 33;
       var att = 1;
-      if (q < 40) { att = 7 / 8 }
-      if (q < 35) { att = 5 / 8 }
-      if (q < 25) { att = 3 / 8 }
-      if (q < 20) { att = 2 / 8 }
-      if (q < 10) { att = 1 / 8 }
-      if (q < 2) { att = 0 }
+      if (q < 40) { att = 7 / 8; }
+      if (q < 35) { att = 5 / 8; }
+      if (q < 25) { att = 3 / 8; }
+      if (q < 20) { att = 2 / 8; }
+      if (q < 10) { att = 1 / 8; }
+      if (q < 2) { att = 0; }
       ctx.globalAlpha = 0.35 * att;
     }
 

@@ -12,6 +12,8 @@ import type {State} from '../types';
 import type {VizProps} from '../VisualizationWrapper';
 
 import React from 'react';
+import {number, arrayOf, node} from 'prop-types';
+
 import Portal from 'react-portal';
 import Reactable from 'reactable';
 var Table = Reactable.Table;
@@ -205,6 +207,12 @@ export class CoveragePopup extends React.Component {
     );
   }
 }
+
+CoveragePopup.propTypes = {
+  popupTop: number,
+  popupLeft: number,
+  children: arrayOf(node)
+};
 
 class CoverageTrack extends React.Component<VizProps<AlignmentDataSource>, State> {
   props: VizProps<AlignmentDataSource>;

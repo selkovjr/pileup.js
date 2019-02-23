@@ -23,9 +23,7 @@ class LocationTrack extends React.Component<VizProps<void>, State> {
 
   constructor(props: VizProps<void>) {
     super(props);
-    this.state = {
-      midpoint: ""
-    };
+    this.midpoint = '';
   }
 
   getScale(): Scale {
@@ -62,7 +60,7 @@ class LocationTrack extends React.Component<VizProps<void>, State> {
           rightLineX = Math.round(scale(midPoint + 1)),
           leftLineX = Math.round(scale(midPoint));
 
-      this.state.midpoint = midPoint;
+      this.midpoint = midPoint;
 
       // Left line
       canvasUtils.drawLine(ctx, leftLineX - 0.5, 0, leftLineX - 0.5, height);
@@ -88,7 +86,7 @@ class LocationTrack extends React.Component<VizProps<void>, State> {
   }
 
   handleClick(reactEvent: any) {
-    copyToClipboard(this.state.midpoint);
+    copyToClipboard(this.midpoint);
   }
 }
 

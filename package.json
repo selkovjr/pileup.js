@@ -1,6 +1,6 @@
 {
   "name": "pileup",
-  "version": "0.6.8",
+  "version": "0.6.10.tempus",
   "description": "JavaScript track viewer",
   "keywords": [
     "genome",
@@ -49,7 +49,9 @@
     "lint"
   ],
   "dependencies": {
+    "acorn": "^6.1.0",
     "babel-core": "^6.26.3",
+    "babel-eslint": "^10.0.1",
     "backbone": "1.1.2",
     "concat-stream": "^1.6.2",
     "d3": "^3.5.5",
@@ -58,8 +60,8 @@
     "hoek": "^5.0.3",
     "jbinary": "^2.1.3",
     "jdataview": "^2.5.0",
-    "jshint": "^2.9.5",
-    "lodash": "^4.17.10",
+    "jshint": "^2.10.1",
+    "lodash": "^4.17.11",
     "memory-cache": "0.1.6",
     "mime": "^2.3.1",
     "ms": "^2.1.1",
@@ -83,10 +85,12 @@
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-react": "^6.24.1",
     "babelify": "^8.0.0",
-    "browserify": "^16.2.2",
+    "browserify": "^16.2.3",
     "chai": "^2.0.0",
     "coveralls": "^3.0.1",
     "envify": "^3.4.0",
+    "eslint": "^5.14.1",
+    "eslint-plugin-react": "^7.12.4",
     "exorcist": "^0.4.0",
     "flow-bin": "^0.74.0",
     "http-server": "^0.11.1",
@@ -109,7 +113,7 @@
     "travis-weigh-in": "^1.0.2",
     "uglify-js": "^2.4.23",
     "uglifyify": "^3.0.1",
-    "watchify": "^3.11.0",
+    "watchify": "^3.11.1",
     "webpack": "^4.12.0"
   }
 }
